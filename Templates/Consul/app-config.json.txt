@@ -1,0 +1,67 @@
+{
+  "AllowedHosts": "*",
+  "Auth0Settings": {
+    "Authority": "https://teamly.us.auth0.com",
+    "Audience": "projectmanagement"
+  },
+  "Postgres": {
+    "Client": {
+      "Host": "localhost",
+      "Port": {postgresPort},
+      "Username": "developer",
+      "Password": "dev123",
+      "Database": "{postgresDb}"
+    }
+  },
+  "SerilogSettings": {
+    "ElasticSearchSettings": {
+      "Uri": "https://localhost:9200",
+      "Username": "elastic",
+      "Password": "dev123",
+      "IndexFormat": "logs-{indexFormatServiceName}-{0:yyyy.MM}"
+    }
+  },
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Verbose",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    }
+  },
+  "Consul": {
+    "Token": "eb108c9f-83de-d6be-60bf-191c8cdc33c9",
+    "Discovery": {
+      "ServiceName": "{serviceName}",
+      "Scheme": "https",
+      "Retry": {
+        "Enabled": true,
+        "MaxAttempts": 5
+      }
+    }
+  },
+  "TelemetrySettings": {
+    "Endpoint": "http://localhost:4317",
+    "ServiceName": "{serviceName}",
+    "ServiceVersion": "v1",
+    "EnableAlwaysOnSampler": false,
+    "SampleProbability": 0.2,
+    "EnableConsoleExporter": false
+  },
+  "management": {
+    "endpoints": {
+      "health": {
+        "showdetails": "always"
+      },
+      "enabled": true,
+      "actuator": {
+        "exposure": {
+          "include": [
+            "*"
+          ]
+        }
+      }
+    }
+  }
+}
