@@ -8,14 +8,27 @@ public class Program
 {
     public static int Main(string[] args)
     {
-        return Parser.Default.ParseArguments<AddOptions, InitOptions>(args)
+        return Parser.Default.ParseArguments<AddOptions, InitOptions, RunOptions>(args)
             .MapResult(
-                (AddOptions opts) => RunAddAndReturnExitCode(opts),
-                (InitOptions opts) => RunInitAndReturnExitCode(opts),
+                (AddOptions opts) => AddAndReturnExitCode(opts),
+                (InitOptions opts) => InitAndReturnExitCode(opts),
+                (RunOptions opts) => RunAndReturnExitCode(opts),
                 errs => 1);
     }
 
-    static int RunAddAndReturnExitCode(AddOptions addOptions)
+    private static int RunAndReturnExitCode(RunOptions runOptions)
+    {
+        ConfigurationService configurationService = new ConfigurationService();
+        NexusRunner runner = new NexusRunner(configurationService);
+        return runOptions.Environment.Trim().ToLower() switch
+        {
+            "local" => runner.RunLocal(),
+            "docker" => runner.RunDocker(),
+            _ => 1,
+        };
+    }
+
+    static int AddAndReturnExitCode(AddOptions addOptions)
     {
         SolutionGenerator solutionGenerator = new SolutionGenerator();
         return addOptions.AddType.Trim().ToLower() switch
@@ -25,7 +38,7 @@ public class Program
         };
     }
     
-    static int RunInitAndReturnExitCode(InitOptions options)
+    static int InitAndReturnExitCode(InitOptions options)
     {
         SolutionGenerator solutionGenerator = new SolutionGenerator();
         return solutionGenerator.InitializeSolution(options.Name) ? 0 : 1;

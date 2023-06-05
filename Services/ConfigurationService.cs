@@ -9,11 +9,13 @@ public class ConfigurationService
     private const string CONFIG_ALREADY_INITIATED = "Nexus already initiated";
     private const string SERVICE_ADDED = "Service added";
     private const string SERVICE_ALREADY_EXISTS = "Service already exists";
+
+    public string GetBasePath() => @"C:\source\dotnet\nexus";
+    // => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
-        string basePath = Directory.GetCurrentDirectory();
-        return Path.Combine(basePath, "nexus.config.json");
+        return Path.Combine(GetBasePath(), "nexus.config.json");
     }
     
     public NexusSolutionConfiguration? ReadConfiguration()
