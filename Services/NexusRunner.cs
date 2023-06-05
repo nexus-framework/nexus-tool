@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using JsonConverter = Newtonsoft.Json.JsonConverter;
 
@@ -9,9 +11,10 @@ namespace Nexus.Services;
 internal class NexusRunner
 {
     private readonly ConfigurationService _configurationService;
-    private const string NetworkName = "consul-external";
+    private const string NetworkName = "consul_external";
     private string networkId = string.Empty;
     private string subnetIp = string.Empty;
+    private string globalToken = string.Empty;
 
     public NexusRunner(ConfigurationService configurationService)
     {
@@ -88,33 +91,45 @@ internal class NexusRunner
         {
             RunDockerCommand($"cp \"{consulAclPath}\" consul-server{i}:/consul/config/consul-acl.json");
         }
-        
+
         // Restart servers
         for (int i = 1; i <= files.Length; i++)
         {
             string containerName = $"consul-server{i}";
-            RunDockerCommand($"docker container restart {containerName}");
+            RunDockerCommand($"container restart {containerName}");
             string containerIp = string.Empty;
             int retries = 0;
             while (containerIp == string.Empty && retries <= 5)
             {
-                Console.WriteLine($"Waiting for {containerName} to be up again (retry: {retries+1})...");
+                Console.WriteLine($"Waiting for {containerName} to be up again (try: {retries+1})...");
                 containerIp =
                     RunDockerCommand(
-                        $"container inspect {containerName} --format '{{{{.NetworkSettings.Networks.bridge.IPAddress}}}}'", false);
+                        $"container inspect {containerName} --format {{{{.NetworkSettings.Networks.{NetworkName}.IPAddress}}}}");
 
+                if (IPAddress.TryParse(containerIp, out _))
+                {
+                    Console.WriteLine($"{containerName} is up");
+                    break;
+                }
+                
                 retries++;
-            }
-
-            if (!string.IsNullOrEmpty(containerIp))
-            {
-                Console.WriteLine($"{containerName} is up");
+                Thread.Sleep(5000);
             }
         }
         
         // Bootstrap acl
+        var bootstrapOutput = RunDockerCommand("exec consul-server1 consul acl bootstrap");
+        Match match = Regex.Match(bootstrapOutput, @"SecretID:\s+(\S+)");
+        globalToken = match.Success ? match.Groups[1].Value : string.Empty;
+        
         // Set agent tokens
-        // Return token
+        for (int i = 1; i <= files.Length; i++)
+        {
+            RunDockerCommand(
+                $"exec -e CONSUL_HTTP_TOKEN=\"{globalToken}\" consul-server{i} consul acl set-agent-token agent \"{globalToken}\"");
+        }
+        
+        Console.WriteLine("Discovery Server ACL Bootstrap Done");
     }
 
     private void ReplaceSubnetIpInConsulServerConfig(string[] files)
