@@ -19,7 +19,8 @@ public class Program
     private static int RunAndReturnExitCode(RunOptions runOptions)
     {
         ConfigurationService configurationService = new ConfigurationService();
-        NexusRunner runner = new NexusRunner(configurationService);
+        ConsulApiService consulApiService = new ConsulApiService();
+        NexusRunner runner = new NexusRunner(configurationService, consulApiService);
         return runOptions.Environment.Trim().ToLower() switch
         {
             "local" => runner.RunLocal(),
