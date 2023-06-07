@@ -1,4 +1,4 @@
-namespace Nexus.Core.Config;
+namespace Nexus.Config;
 
 public class FrameworkConfiguration
 {

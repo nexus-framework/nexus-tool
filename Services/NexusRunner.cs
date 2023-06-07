@@ -1,4 +1,4 @@
-using Nexus.Core.Config;
+using Nexus.Config;
 using Nexus.Runners;
 using static Nexus.Services.ConsoleUtilities;
 
@@ -35,7 +35,7 @@ internal class NexusRunner
         HealthChecksDashboardRunner healthChecksDashboardRunner =
             new (_configurationService, config.Framework.HealthChecksDashboard, RunType.Local, _consulApiService);
 
-        List<StandardServiceRunner> runners = new List<StandardServiceRunner>();
+        List<StandardServiceRunner> runners = new ();
         foreach (var configuration in config.Services)
         {
             var runner =

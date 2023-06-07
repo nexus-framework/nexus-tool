@@ -18,9 +18,9 @@ public class Program
 
     private static int RunAndReturnExitCode(RunOptions runOptions)
     {
-        ConfigurationService configurationService = new ConfigurationService();
-        ConsulApiService consulApiService = new ConsulApiService();
-        NexusRunner runner = new NexusRunner(configurationService, consulApiService);
+        ConfigurationService configurationService = new ();
+        ConsulApiService consulApiService = new ();
+        NexusRunner runner = new (configurationService, consulApiService);
         return runOptions.Environment.Trim().ToLower() switch
         {
             "local" => runner.RunLocal(),
@@ -31,7 +31,7 @@ public class Program
 
     static int AddAndReturnExitCode(AddOptions addOptions)
     {
-        SolutionGenerator solutionGenerator = new SolutionGenerator();
+        SolutionGenerator solutionGenerator = new ();
         return addOptions.AddType.Trim().ToLower() switch
         {
             "service" => solutionGenerator.AddService(addOptions.Name) ? 0 : 1,
@@ -41,7 +41,7 @@ public class Program
     
     static int InitAndReturnExitCode(InitOptions options)
     {
-        SolutionGenerator solutionGenerator = new SolutionGenerator();
+        SolutionGenerator solutionGenerator = new ();
         return solutionGenerator.InitializeSolution(options.Name) ? 0 : 1;
     }
 }

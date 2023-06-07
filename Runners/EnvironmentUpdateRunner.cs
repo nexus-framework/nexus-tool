@@ -1,6 +1,6 @@
-﻿using Nexus.Core.Config;
-using Nexus.Services;
+﻿using Nexus.Services;
 using CaseExtensions;
+using Nexus.Config;
 
 namespace Nexus.Runners;
 

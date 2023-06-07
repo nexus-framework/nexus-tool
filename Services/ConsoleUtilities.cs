@@ -80,7 +80,7 @@ public static class ConsoleUtilities
 
     public static void PrintState(RunState state)
     {
-        var serviceTable = new TableBuilder()
+        var tokenTable = new TableBuilder()
             .AddColumn("Service", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
@@ -91,27 +91,36 @@ public static class ConsoleUtilities
                 Alignment = Alignment.Left,
                 ForegroundColor = Color.Gold,
             }, rowsFormat: new CellFormat { ForegroundColor = Color.Gold })
+            .Build();
+        
+        tokenTable.AddRow("Consul", state.GlobalToken);
+        foreach (var serviceToken in state.ServiceTokens)
+        {
+            tokenTable.AddRow(serviceToken.Key, serviceToken.Value);
+        }
+        tokenTable.Config = TableConfig.Unicode();
+        
+        var servicesTable = new TableBuilder()
+            .AddColumn("Service", headerFormat: new CellFormat
+            {
+                Alignment = Alignment.Left,
+                ForegroundColor = Color.Cyan,
+            }, rowsFormat: new CellFormat { ForegroundColor = Color.Cyan })
             .AddColumn("Url", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
                 ForegroundColor = Color.Gold,
             }, rowsFormat: new CellFormat { ForegroundColor = Color.Gold })
             .Build();
-        
-        
-        serviceTable.AddRow("Consul", state.GlobalToken, "http://localhost:8500");
-        foreach (var serviceToken in state.ServiceTokens)
-        {
-            state.ServiceUrls.TryGetValue(serviceToken.Key, out string? serviceUrl);
-            serviceTable.AddRow(serviceToken.Key, serviceToken.Value, serviceUrl);
-        }
+        servicesTable.Config = TableConfig.UnicodeAlt();
 
-        serviceTable.AddRow("Jaeger", "", "http://localhost:16686");
-        serviceTable.AddRow("Kibana", "", "http://localhost:5601");
-        serviceTable.AddRow("Prometheus", "", "http://localhost:9090");
-        serviceTable.AddRow("Grafana", "", "http://localhost:3900");
+        servicesTable.AddRow("Consul", "http://localhost:8500");
+        servicesTable.AddRow("Jaeger", "http://localhost:16686");
+        servicesTable.AddRow("Kibana", "http://localhost:5601");
+        servicesTable.AddRow("Prometheus", "http://localhost:9090");
+        servicesTable.AddRow("Grafana", "http://localhost:3900");
         
-        serviceTable.Config = TableConfig.Unicode();
-        Console.WriteLine(serviceTable.ToString());
+        Console.WriteLine(tokenTable.ToString());
+        Console.WriteLine(servicesTable.ToString());
     }
 }

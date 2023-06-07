@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace Nexus.Generators.LaunchSettings;
 
 public class LaunchSettingsGenerator : ProjectCodeGenerator

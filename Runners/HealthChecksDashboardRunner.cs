@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Nexus.Core.Config;
+﻿using Nexus.Config;
 using Nexus.Services;
 
 namespace Nexus.Runners;

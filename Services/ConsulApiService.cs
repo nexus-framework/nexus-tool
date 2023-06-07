@@ -13,7 +13,7 @@ public class ConsulApiService
     {
         var client = GetConsulHttpClient(globalToken);
         PolicyCreationResult policy = GetConsulPolicyBody(serviceName, rules);
-        StringContent content = new StringContent(policy.Json, Encoding.UTF8, "application/json");
+        StringContent content = new (policy.Json, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(PolicyApiUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
         dynamic? jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
@@ -30,7 +30,7 @@ public class ConsulApiService
 
     private static HttpClient GetConsulHttpClient(string globalToken)
     {
-        HttpClient client = new HttpClient();
+        HttpClient client = new ();
         client.DefaultRequestHeaders.Add("X-Consul-Token", globalToken);
         return client;
     }
@@ -81,7 +81,7 @@ public class ConsulApiService
         var client = GetConsulHttpClient(globalToken);
         var tokenJson = GetConsulTokenBody(serviceName, policyName);
         
-        StringContent content = new StringContent(tokenJson, Encoding.UTF8, "application/json");
+        StringContent content = new (tokenJson, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(TokenApiUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
         dynamic? jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
@@ -92,7 +92,7 @@ public class ConsulApiService
     public void UploadKv(string serviceName, string json, string globalToken)
     {
         var client = GetConsulHttpClient(globalToken);
-        StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+        StringContent content = new (json, Encoding.UTF8, "application/json");
         string kvUrl = string.Format(KvApiUrl, serviceName);
         HttpResponseMessage response = client.PutAsync(kvUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;

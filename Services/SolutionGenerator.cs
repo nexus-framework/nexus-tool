@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
 using Nexus.Generators;
+using static Nexus.Services.ConsoleUtilities;
 using Nexus.Generators.LaunchSettings;
 
 namespace Nexus.Services;
@@ -39,6 +40,8 @@ public class SolutionGenerator
         EnsureServicesFolder();
         
         // add api gateway
+        
+        
         // add hc dashboard
         // add discovery server
         
@@ -108,7 +111,7 @@ public class SolutionGenerator
 
     private static string GetProjectXml(string rootNamespace)
     {
-        XElement propertyGroup = new XElement("PropertyGroup",
+        XElement propertyGroup = new ("PropertyGroup",
             new XElement("TargetFramework", "net7.0"),
             new XElement("Nullable", "enable"),
             new XElement("ImplicitUsings", "enable"),
@@ -120,41 +123,21 @@ public class SolutionGenerator
             new XElement("GenerateTargetFrameworkAttribute", "false")
         );
   
-        XElement projectElement = new XElement("Project", propertyGroup,
+        XElement projectElement = new ("Project", propertyGroup,
             new XAttribute("Sdk", "Microsoft.NET.Sdk.Web"));
         
-        XDocument document = new XDocument(projectElement);
+        XDocument document = new (projectElement);
         
         return document.ToString();
     }
 
-    private static bool CreateSolutionFile(string rawName)
+    private bool CreateSolutionFile(string rawName)
     {
         string kebabCasedNameWithoutApi = Utilities.GetKebabCasedNameWithoutApi(rawName);
-        
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            Arguments = $"new sln -n {kebabCasedNameWithoutApi}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-
-        using Process? process = Process.Start(startInfo);
-
-        process?.WaitForExit();
-
-        if (process?.ExitCode == 0)
-        {
-            Console.WriteLine("Solution generated successfully!");
-            return true;
-        }
-
-        string errorMessage = process?.StandardError.ReadToEnd() ?? "Unknown error";
-        Console.WriteLine($"Solution generation failed. Error message: {errorMessage}");
-        return false;
+        string slnFolder = _configurationService.GetBasePath(); 
+        RunPowershellCommand($"dotnet new sln --output {slnFolder} --name {kebabCasedNameWithoutApi}");
+        Console.WriteLine("Solution generated successfully!");
+        return true;
     }
 
     private static bool AddServiceCsProjectFileToSolution(string csProjectFilePath)
@@ -165,7 +148,7 @@ public class SolutionGenerator
             return false;
         }
         
-        ProcessStartInfo startInfo = new ProcessStartInfo
+        ProcessStartInfo startInfo = new()
         {
             FileName = "dotnet",
             Arguments = $"sln add {csProjectFilePath}",
@@ -190,11 +173,12 @@ public class SolutionGenerator
         return false;
     }
     
-    private static void EnsureServicesFolder()
+    private void EnsureServicesFolder()
     {
-        if (!Directory.Exists(Constants.SERVICES_DIRECTORY))
+        var servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), Constants.SERVICES_DIRECTORY);
+        if (!Directory.Exists(servicesFolderPath))
         {
-            Directory.CreateDirectory(Constants.SERVICES_DIRECTORY);
+            Directory.CreateDirectory(servicesFolderPath);
         }
     }
 }
