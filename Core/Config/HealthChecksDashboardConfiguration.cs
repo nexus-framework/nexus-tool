@@ -1,6 +1,5 @@
 namespace Nexus.Core.Config;
 
-public class HealthChecksDashboardConfiguration
+public class HealthChecksDashboardConfiguration : NexusServiceConfiguration
 {
-    public string ConsulConfigDirectory { get; set; } = string.Empty;
 }

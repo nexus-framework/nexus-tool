@@ -81,7 +81,7 @@ public class ConfigurationService
         
         config.Services.Add(new NexusServiceConfiguration
         {
-            Name = cleanedName,
+            ServiceName = cleanedName,
         });
 
         WriteConfiguration(config);
@@ -98,7 +98,7 @@ public class ConfigurationService
             return false;
         }
 
-        if (config.Services.Any(x => x.Name == serviceName))
+        if (config.Services.Any(x => x.ServiceName == serviceName))
         {
             Console.WriteLine(SERVICE_ALREADY_EXISTS);
             return true;

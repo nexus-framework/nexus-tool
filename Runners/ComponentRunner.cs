@@ -42,12 +42,15 @@ public class RunState
     public string NetworkId { get; set; } = string.Empty;
     public string SubnetIp { get; set; } = string.Empty;
     public string GlobalToken { get; set; } = string.Empty;
-    public string ApiGatewayToken { get; set; }= string.Empty;
     public string DevCertsPassword { get; set; }
     
-    public List<PolicyCreationResult> Policies = new List<PolicyCreationResult>();
+    public Dictionary<string, PolicyCreationResult> Policies = new ();
     
     public StepStatus LastStepStatus { get; set; }
+
+    public Dictionary<string, string> ServiceUrls { get; set; } = new ();
+
+    public Dictionary<string, string> ServiceTokens = new ();
 
 }
 

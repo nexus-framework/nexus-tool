@@ -11,8 +11,6 @@ public class ConsulApiService
     
     public PolicyCreationResult CreateConsulPolicy(string globalToken, string rules, string serviceName)
     {
-        Console.WriteLine($"Creating policy for {serviceName}");
-        
         var client = GetConsulHttpClient(globalToken);
         PolicyCreationResult policy = GetConsulPolicyBody(serviceName, rules);
         StringContent content = new StringContent(policy.Json, Encoding.UTF8, "application/json");
@@ -26,8 +24,6 @@ public class ConsulApiService
         }
         
         policy.Id = jsonResponse.ID;
-        
-        Console.WriteLine($"Policy created: {policy.Name} : {policy.Id}");
         
         return policy;
     }
