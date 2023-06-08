@@ -68,7 +68,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
     protected virtual PolicyCreationResult CreatePolicy(string globalToken)
     {
-        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), Configuration.ConsulConfigDirectory, "rules.hcl");
+        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName), "rules.hcl");
 
         if (!File.Exists(consulRulesFile))
         {
@@ -87,10 +87,10 @@ public abstract class ServiceRunner<T> : ComponentRunner
         return token;
     }
     
-    private void UpdateAppConfig(RunState state)
+    protected virtual void UpdateAppConfig(RunState state)
     {
         Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), Configuration.ConsulConfigDirectory,
+        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName),
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -107,8 +107,6 @@ public abstract class ServiceRunner<T> : ComponentRunner
             Console.Error.WriteLine($"Unable to read file: app-config for {Configuration.ServiceName}");
             return;
         }
-
-        ModifyAppConfig(appConfig, state);
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(appConfigPath, updatedAppConfigJson);
@@ -121,7 +119,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
     
     protected virtual void UpdateAppSettings(RunState state)
     {
-        string appSettingsPath = Path.Combine(ConfigurationService.GetBasePath(), Configuration.AppSettingsConfigPath);
+        string appSettingsPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceAppSettingsFile(Configuration.ServiceName));
 
         if (!File.Exists(appSettingsPath))
         {
@@ -148,5 +146,5 @@ public abstract class ServiceRunner<T> : ComponentRunner
     }
 
 
-    protected abstract void ModifyAppConfig(dynamic appConfig, RunState state);
+    //protected abstract void ModifyAppConfig(dynamic appConfig, RunState state);
 }

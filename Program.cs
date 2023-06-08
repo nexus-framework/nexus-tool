@@ -34,7 +34,7 @@ public class Program
         SolutionGenerator solutionGenerator = new ();
         return addOptions.AddType.Trim().ToLower() switch
         {
-            "service" => solutionGenerator.AddService(addOptions.Name) ? 0 : 1,
+            "service" => solutionGenerator.AddService(addOptions.Name).Result ? 0 : 1,
             _ => 1,
         };
     }

@@ -2,7 +2,7 @@ namespace Nexus.Config;
 
 public class FrameworkConfiguration
 {
-    public ApiGatewayConfiguration ApiGateway { get; set; } = new ();
+    public NexusServiceConfiguration ApiGateway { get; set; } = new ();
 
-    public HealthChecksDashboardConfiguration HealthChecksDashboard { get; set; } = new ();
+    public NexusServiceConfiguration HealthChecksDashboard { get; set; } = new ();
 }

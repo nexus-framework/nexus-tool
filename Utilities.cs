@@ -14,6 +14,7 @@ public static class Utilities
     {
         return name.Trim().ToLower()
             .Replace(' ', replaceSpaceWith)
+            .Replace('-', replaceSpaceWith)
             .Replace(",", "")
             .Replace("/", "");
     }

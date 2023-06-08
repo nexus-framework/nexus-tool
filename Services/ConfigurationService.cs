@@ -5,10 +5,10 @@ namespace Nexus.Services;
 
 public class ConfigurationService
 {
-    private const string CONFIG_INITIATED = "Nexus initiated";
-    private const string CONFIG_ALREADY_INITIATED = "Nexus already initiated";
-    private const string SERVICE_ADDED = "Service added";
-    private const string SERVICE_ALREADY_EXISTS = "Service already exists";
+    private const string ConfigInitiated = "Nexus initiated";
+    private const string ConfigAlreadyInitiated = "Nexus already initiated";
+    private const string ServiceAdded = "Service added";
+    private const string ServiceAlreadyExists = "Service already exists";
 
     public string GetBasePath() => @"C:\source\dotnet\nexus";
     // public string GetBasePath() => Directory.GetCurrentDirectory();
@@ -17,6 +17,12 @@ public class ConfigurationService
     {
         return Path.Combine(GetBasePath(), "nexus.config.json");
     }
+
+    public string ApiGatewayOcelotDirectory => Path.Combine(GetBasePath(), @"\api-gateway\src\Nexus.ApiGateway\Ocelot");
+    public string ApiGatewayConsulDirectory => Path.Combine(GetBasePath(), @"\api-gateway\src\Nexus.ApiGateway\Consul");
+    public string HealthChecksDashboardConsulDirectory => Path.Combine(GetBasePath(), @"\health-checks-dashboard\src\Nexus.HealthChecksDashboard\Consul");
+    public string GetServiceConsulDirectory(string projectName) => Path.Combine(GetBasePath(), "services", "src", projectName, "Consul");
+    public string GetServiceAppSettingsFile(string projectName) => Path.Combine(GetBasePath(), "services", "src", projectName, "appsettings.json");
     
     public NexusSolutionConfiguration? ReadConfiguration()
     {
@@ -55,7 +61,7 @@ public class ConfigurationService
     {
         if (ConfigurationExists())
         {
-            Console.WriteLine(CONFIG_ALREADY_INITIATED);
+            Console.WriteLine(ConfigAlreadyInitiated);
             return false;
         }
 
@@ -68,16 +74,15 @@ public class ConfigurationService
                 {
                     Port = 7068,
                     ServiceName = "api-gateway",
-                    OcelotDirectory = Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Ocelot"),
-                    ConsulConfigDirectory = Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Consul"),
-                    AppSettingsConfigPath = Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\appsettings.json"),
+                    ProjectName = "Nexus.ApiGateway",
+                    RootNamespace = "Nexus.ApiGateway",
                 },
                 HealthChecksDashboard = new ()
                 {
                     Port = 5051,
                     ServiceName = "health-checks-dashboard",
-                    ConsulConfigDirectory = Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.HealthChecksDashboard\Consul"),
-                    AppSettingsConfigPath = Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.HealthChecksDashboard\appsettings.json"),
+                    ProjectName = "Nexus.HealthChecksDashboard",
+                    RootNamespace = "Nexus.HealthChecksDashboard",
                 },
             },
             Services = new(),
@@ -85,13 +90,12 @@ public class ConfigurationService
 
         WriteConfiguration(nexusSolutionConfig);
 
-        Console.WriteLine(CONFIG_INITIATED);
+        Console.WriteLine(ConfigInitiated);
         return true;
     }
     
-    public bool AddService(string name)
+    public bool AddService(string serviceName, string projectName, string rootNamespace, int port)
     {
-        string cleanedName = Utilities.GetKebabCasedNameAndApi(name);
         NexusSolutionConfiguration? config = ReadConfiguration();
         if (config == null)
         {
@@ -100,11 +104,14 @@ public class ConfigurationService
         
         config.Services.Add(new NexusServiceConfiguration
         {
-            ServiceName = cleanedName,
+            ServiceName = serviceName,
+            ProjectName = projectName,
+            RootNamespace = rootNamespace,
+            Port = port,
         });
 
         WriteConfiguration(config);
-        Console.WriteLine(SERVICE_ADDED);
+        Console.WriteLine(ServiceAdded);
         return true;
     }
 
@@ -119,7 +126,7 @@ public class ConfigurationService
 
         if (config.Services.Any(x => x.ServiceName == serviceName))
         {
-            Console.WriteLine(SERVICE_ALREADY_EXISTS);
+            Console.WriteLine(ServiceAlreadyExists);
             return true;
         }
 

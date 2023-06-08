@@ -1,29 +1,32 @@
-﻿using System.Diagnostics;
-using System.Xml.Linq;
-using Nexus.Generators;
+﻿using CaseExtensions;
+using Nexus.Config;
 using static Nexus.Services.ConsoleUtilities;
-using Nexus.Generators.LaunchSettings;
 
 namespace Nexus.Services;
 
 public static class Constants
 {
-    public const string SERVICES_DIRECTORY = "services";
+    public const string ServicesDirectory = "services";
 }
 
 public class SolutionGenerator
 {
     private readonly ConfigurationService _configurationService;
+    private readonly GitHubService _gitHubService;
+    private readonly Random _random;
 
     public SolutionGenerator()
     {
         _configurationService = new ConfigurationService();
+        _gitHubService = new GitHubService();
+        _random = new Random();
     }
 
     public bool InitializeSolution(string rawName)
     {
         // create solution file
-        bool solutionCreated = CreateSolutionFile(rawName);
+        string solutionName = Utilities.GetKebabCasedNameWithoutApi(rawName);
+        bool solutionCreated = CreateSolutionFile(solutionName);
         if (!solutionCreated)
         {
             return false;
@@ -51,19 +54,30 @@ public class SolutionGenerator
         return true;
     }
     
-    public bool AddService(string rawName)
+    public async Task<bool> AddService(string rawName)
     {
         // serviceName: project-api
         // serviceRootFolder: services/project-api
         // serviceCsProjectName: Project.Api
         // serviceCsProjFolder: services/src/Project.Api
         // serviceCsProjFile: services/src/Project.Api/Project.Api.csproj
+        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
 
+        if (config == null)
+        {
+            return false;
+        }
+        
+        string solutionName = Utilities.GetKebabCasedNameWithoutApi(config.ProjectName);
+        string solutionPath = Path.Combine(_configurationService.GetBasePath(), $"{solutionName}.sln");
         string kebabCasedNameAndApi = Utilities.GetKebabCasedNameAndApi(rawName);
-        string serviceRootFolder = Path.Combine(Constants.SERVICES_DIRECTORY, kebabCasedNameAndApi);
+        string serviceRootFolder = Path.Combine(_configurationService.GetBasePath(), Constants.ServicesDirectory, kebabCasedNameAndApi);
         string pascalCasedNameAndDotApi = Utilities.GetPascalCasedNameAndDotApi(rawName);
+        string rootNamespace = pascalCasedNameAndDotApi.Replace(".", "");
         string serviceCsProjFolder = Path.Combine(serviceRootFolder, "src", pascalCasedNameAndDotApi);
         string serviceCsProjFile = Path.Combine(serviceCsProjFolder, $"{pascalCasedNameAndDotApi}.csproj");
+        int httpsPort = _random.Next(6000, 6100);
+        int httpPort = httpsPort + 1;
         
         if (_configurationService.ServiceExists(kebabCasedNameAndApi))
         { 
@@ -74,28 +88,60 @@ public class SolutionGenerator
         // TODO: Add tests folder
         EnsureDirectories(new[] { serviceRootFolder, serviceCsProjFolder });
 
-        // Create project
-        string csprojXml = GetProjectXml(pascalCasedNameAndDotApi);
-        File.WriteAllText(serviceCsProjFile, csprojXml);
+        // Download project template
+        await _gitHubService.DownloadServiceTemplate(serviceCsProjFolder);
+        // Replace variables
+        ReplaceTemplateVariables(config.ProjectName, serviceCsProjFolder, pascalCasedNameAndDotApi, rootNamespace, kebabCasedNameAndApi, httpsPort, httpPort);
 
-        // Add components based on some config
-        
         // Add service to solution
-        AddServiceCsProjectFileToSolution(serviceCsProjFile);
-        AddGeneratedFilesToService(serviceCsProjFolder, pascalCasedNameAndDotApi, kebabCasedNameAndApi);
+        AddServiceCsProjectFileToSolution(solutionPath, serviceCsProjFile);
         
-        return _configurationService.AddService(kebabCasedNameAndApi);
+        return _configurationService.AddService(kebabCasedNameAndApi, pascalCasedNameAndDotApi, rootNamespace, httpsPort);
     }
 
-    private static bool AddGeneratedFilesToService(string csProjFolderPath, string projectName, string serviceName)
+    private void ReplaceTemplateVariables(
+        string solutionName,
+        string serviceCsProjFolder,
+        string projectName, 
+        string rootNamespace,
+        string serviceName, 
+        int httpPort,
+        int httpsPort)
     {
-        ProjectCodeGenerator launchSettingsGenerator = new LaunchSettingsGenerator();
-        ProjectCodeGenerator consulCodeGenerator = new ConsulCodeGenerator();
-
-        launchSettingsGenerator.GenerateFiles(csProjFolderPath, projectName, serviceName);
-        consulCodeGenerator.GenerateFiles(csProjFolderPath, projectName, serviceName);
+        // List files
+        var files = Directory.GetFiles(serviceCsProjFolder, "*.*", SearchOption.AllDirectories);
+        var solutionNameSnakeCase = solutionName.ToSnakeCase();
+        var serviceNameSnakeCase = serviceName.ToSnakeCase();
         
-        return true;
+        // Replace variables
+        foreach (string file in files)
+        {
+            if (!File.Exists(file))
+            {
+                Console.Error.WriteLine($"Unable to find file {file}");
+                continue;
+            }
+            
+            var fileText = File.ReadAllText(file);
+            var updatedText = fileText
+                .Replace("{{RootNamespace}}", rootNamespace)
+                .Replace("{{ServiceName}}", serviceName)
+                .Replace("{{ProjectName}}", projectName)
+                .Replace("{{ApplicationPort_Https}}", httpsPort.ToString())
+                .Replace("{{ApplicationPort_Http}}", httpPort.ToString())
+                .Replace("{{SolutionNameSnakeCase}}", solutionNameSnakeCase)
+                .Replace("{{ServiceNameSnakeCase}}", serviceNameSnakeCase);
+            
+            File.WriteAllText(file, updatedText);
+        }
+        
+        // Rename csproj
+        var csProjFile = files.FirstOrDefault(x => x.EndsWith("ServiceTemplate.csproj"));
+        if (csProjFile != null)
+        {
+            var updatedName = csProjFile.Replace("ServiceTemplate.csproj", $"{projectName}.csproj");
+            File.Move(csProjFile, updatedName);
+        }
     }
 
     private static void EnsureDirectories(string[] directories)
@@ -109,73 +155,29 @@ public class SolutionGenerator
         }
     }
 
-    private static string GetProjectXml(string rootNamespace)
+    private bool CreateSolutionFile(string solutionName)
     {
-        XElement propertyGroup = new ("PropertyGroup",
-            new XElement("TargetFramework", "net7.0"),
-            new XElement("Nullable", "enable"),
-            new XElement("ImplicitUsings", "enable"),
-            new XElement("RootNamespace", rootNamespace),
-            new XElement("GenerateDocumentationFile", "true"),
-            new XElement("NoWarn", "$(NoWarn);1591"),
-            new XElement("DockerDefaultTargetOS", "Linux"),
-            new XElement("GenerateAssemblyInfo", "false"),
-            new XElement("GenerateTargetFrameworkAttribute", "false")
-        );
-  
-        XElement projectElement = new ("Project", propertyGroup,
-            new XAttribute("Sdk", "Microsoft.NET.Sdk.Web"));
-        
-        XDocument document = new (projectElement);
-        
-        return document.ToString();
-    }
-
-    private bool CreateSolutionFile(string rawName)
-    {
-        string kebabCasedNameWithoutApi = Utilities.GetKebabCasedNameWithoutApi(rawName);
         string slnFolder = _configurationService.GetBasePath(); 
-        RunPowershellCommand($"dotnet new sln --output {slnFolder} --name {kebabCasedNameWithoutApi}");
+        RunPowershellCommand($"dotnet new sln --output \"{slnFolder}\" --name {solutionName}");
         Console.WriteLine("Solution generated successfully!");
         return true;
     }
 
-    private static bool AddServiceCsProjectFileToSolution(string csProjectFilePath)
+    private static bool AddServiceCsProjectFileToSolution(string solutionPath, string csProjectFilePath)
     {
         if (!File.Exists(csProjectFilePath))
         {
             // TODO: Write message
             return false;
         }
-        
-        ProcessStartInfo startInfo = new()
-        {
-            FileName = "dotnet",
-            Arguments = $"sln add {csProjectFilePath}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
 
-        using Process? process = Process.Start(startInfo);
-
-        process?.WaitForExit();
-
-        if (process?.ExitCode == 0)
-        {
-            Console.WriteLine("Service added to solution");
-            return true;
-        }
-        
-        string errorMessage = process?.StandardError.ReadToEnd() ?? "Unknown error";
-        Console.WriteLine($"Service could not be added to solution. Error message: {errorMessage}");
-        return false;
+        RunPowershellCommand($"dotnet sln \"{solutionPath}\" add \"{csProjectFilePath}\"");
+        return true;
     }
     
     private void EnsureServicesFolder()
     {
-        var servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), Constants.SERVICES_DIRECTORY);
+        var servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), Constants.ServicesDirectory);
         if (!Directory.Exists(servicesFolderPath))
         {
             Directory.CreateDirectory(servicesFolderPath);
