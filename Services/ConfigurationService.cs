@@ -93,8 +93,8 @@ public class ConfigurationService
         Console.WriteLine(ConfigInitiated);
         return true;
     }
-    
-    public bool AddService(string serviceName, string projectName, string rootNamespace, int port)
+
+    public bool AddService(ServiceInitializationInfo info)
     {
         NexusSolutionConfiguration? config = ReadConfiguration();
         if (config == null)
@@ -104,10 +104,10 @@ public class ConfigurationService
         
         config.Services.Add(new NexusServiceConfiguration
         {
-            ServiceName = serviceName,
-            ProjectName = projectName,
-            RootNamespace = rootNamespace,
-            Port = port,
+            ServiceName = info.ServiceNameKebabCase,
+            ProjectName = info.ServiceNamePascalCasedAndDotApi,
+            RootNamespace = info.RootNamespace,
+            Port = info.HttpsPort,
         });
 
         WriteConfiguration(config);
@@ -132,4 +132,6 @@ public class ConfigurationService
 
         return false;
     }
+
+    public string GetEnvironmentFile() => Path.Combine(GetBasePath(), ".env");
 }

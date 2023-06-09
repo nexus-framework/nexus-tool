@@ -32,6 +32,14 @@ public static class Utilities
         return kebabCased.EndsWith("-api") ? kebabCased : $"{kebabCased}-api";
     }
     
+    public static string GetSnakeCasedNameAndApi(string name)
+    {
+        string cleanedName = CleanNameAndReplaceSpaces(name, '-');
+        string snakeCased = cleanedName.ToSnakeCase();
+
+        return snakeCased.EndsWith("_api") ? snakeCased : $"{snakeCased}_api";
+    }
+    
     public static string GetKebabCasedNameWithoutApi(string name)
     {
         string cleanedName = CleanNameAndReplaceSpaces(name, '-');

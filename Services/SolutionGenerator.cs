@@ -56,63 +56,48 @@ public class SolutionGenerator
     
     public async Task<bool> AddService(string rawName)
     {
-        // serviceName: project-api
-        // serviceRootFolder: services/project-api
-        // serviceCsProjectName: Project.Api
-        // serviceCsProjFolder: services/src/Project.Api
-        // serviceCsProjFile: services/src/Project.Api/Project.Api.csproj
         NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
 
         if (config == null)
         {
             return false;
         }
-        
-        string solutionName = Utilities.GetKebabCasedNameWithoutApi(config.ProjectName);
-        string solutionPath = Path.Combine(_configurationService.GetBasePath(), $"{solutionName}.sln");
-        string kebabCasedNameAndApi = Utilities.GetKebabCasedNameAndApi(rawName);
-        string serviceRootFolder = Path.Combine(_configurationService.GetBasePath(), Constants.ServicesDirectory, kebabCasedNameAndApi);
-        string pascalCasedNameAndDotApi = Utilities.GetPascalCasedNameAndDotApi(rawName);
-        string rootNamespace = pascalCasedNameAndDotApi.Replace(".", "");
-        string serviceCsProjFolder = Path.Combine(serviceRootFolder, "src", pascalCasedNameAndDotApi);
-        string serviceCsProjFile = Path.Combine(serviceCsProjFolder, $"{pascalCasedNameAndDotApi}.csproj");
+
         int httpsPort = _random.Next(6000, 6100);
-        int httpPort = httpsPort + 1;
+
+        ServiceInitializationInfo info = new (
+            solutionName: config.ProjectName,
+            serviceNameRaw: rawName,
+            basePath: _configurationService.GetBasePath(),
+            httpsPort: httpsPort,
+            httpPort: httpsPort + 1);
         
-        if (_configurationService.ServiceExists(kebabCasedNameAndApi))
+        if (_configurationService.ServiceExists(info.ServiceNameKebabCaseAndApi))
         { 
             return false;
         }
         
         // Create service folders
-        // TODO: Add tests folder
-        EnsureDirectories(new[] { serviceRootFolder, serviceCsProjFolder });
+        EnsureDirectories(new[] { info.ServiceRootFolder, info.ServiceCsProjectFolder });
 
         // Download project template
-        await _gitHubService.DownloadServiceTemplate(serviceCsProjFolder);
-        // Replace variables
-        ReplaceTemplateVariables(config.ProjectName, serviceCsProjFolder, pascalCasedNameAndDotApi, rootNamespace, kebabCasedNameAndApi, httpsPort, httpPort);
-
-        // Add service to solution
-        AddServiceCsProjectFileToSolution(solutionPath, serviceCsProjFile);
+        await _gitHubService.DownloadServiceTemplate(info.ServiceCsProjectFolder);
         
-        return _configurationService.AddService(kebabCasedNameAndApi, pascalCasedNameAndDotApi, rootNamespace, httpsPort);
+        // Replace variables
+        ReplaceTemplateVariables(info);
+
+        // AddEnvironmentVariables();
+        
+        // Add service to solution
+        AddServiceCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
+        return _configurationService.AddService(info);
     }
 
-    private void ReplaceTemplateVariables(
-        string solutionName,
-        string serviceCsProjFolder,
-        string projectName, 
-        string rootNamespace,
-        string serviceName, 
-        int httpPort,
-        int httpsPort)
+    private void ReplaceTemplateVariables(ServiceInitializationInfo info)
     {
         // List files
-        var files = Directory.GetFiles(serviceCsProjFolder, "*.*", SearchOption.AllDirectories);
-        var solutionNameSnakeCase = solutionName.ToSnakeCase();
-        var serviceNameSnakeCase = serviceName.ToSnakeCase();
-        
+        var files = Directory.GetFiles(info.ServiceCsProjectFolder, "*.*", SearchOption.AllDirectories);
+
         // Replace variables
         foreach (string file in files)
         {
@@ -124,13 +109,13 @@ public class SolutionGenerator
             
             var fileText = File.ReadAllText(file);
             var updatedText = fileText
-                .Replace("{{RootNamespace}}", rootNamespace)
-                .Replace("{{ServiceName}}", serviceName)
-                .Replace("{{ProjectName}}", projectName)
-                .Replace("{{ApplicationPort_Https}}", httpsPort.ToString())
-                .Replace("{{ApplicationPort_Http}}", httpPort.ToString())
-                .Replace("{{SolutionNameSnakeCase}}", solutionNameSnakeCase)
-                .Replace("{{ServiceNameSnakeCase}}", serviceNameSnakeCase);
+                .Replace("{{RootNamespace}}", info.RootNamespace)
+                .Replace("{{ServiceName}}", info.ServiceNameKebabCase) // FIXXXXX
+                .Replace("{{ProjectName}}", info.ServiceNamePascalCasedAndDotApi)
+                .Replace("{{ApplicationPort_Https}}", info.HttpsPort.ToString())
+                .Replace("{{ApplicationPort_Http}}", info.HttpPort.ToString())
+                .Replace("{{SolutionNameSnakeCase}}", info.SolutionNameSnakeCase)
+                .Replace("{{ServiceNameSnakeCase}}", info.ServiceNameSnakeCase);
             
             File.WriteAllText(file, updatedText);
         }
@@ -139,7 +124,7 @@ public class SolutionGenerator
         var csProjFile = files.FirstOrDefault(x => x.EndsWith("ServiceTemplate.csproj"));
         if (csProjFile != null)
         {
-            var updatedName = csProjFile.Replace("ServiceTemplate.csproj", $"{projectName}.csproj");
+            var updatedName = csProjFile.Replace("ServiceTemplate.csproj", $"{info.ServiceNamePascalCasedAndDotApi}.csproj");
             File.Move(csProjFile, updatedName);
         }
     }
