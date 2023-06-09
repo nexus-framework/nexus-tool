@@ -1,5 +1,5 @@
-﻿using Nexus.Services;
-using static Nexus.Services.ConsoleUtilities;
+﻿using Nexus.Config;
+using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
 

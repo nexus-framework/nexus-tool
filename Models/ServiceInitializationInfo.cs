@@ -1,6 +1,7 @@
 ﻿using CaseExtensions;
+using Nexus.Extensions;
 
-namespace Nexus.Services;
+namespace Nexus.Models;
 
 public class ServiceInitializationInfo
 {
@@ -29,13 +30,13 @@ public class ServiceInitializationInfo
     public string RootNamespace => ServiceNamePascalCasedAndDotApi.Replace(".", "");
     
     public string ServiceNameRaw { get; }
-    public string ServiceNameKebabCase => Utilities.GetKebabCasedNameWithoutApi(ServiceNameRaw);
-    public string ServiceNameKebabCaseAndApi => Utilities.GetKebabCasedNameAndApi(ServiceNameRaw);
+    public string ServiceNameKebabCase => NameExtensions.GetKebabCasedNameWithoutApi(ServiceNameRaw);
+    public string ServiceNameKebabCaseAndApi => NameExtensions.GetKebabCasedNameAndApi(ServiceNameRaw);
     public string ServiceNameSnakeCase => ServiceNameRaw.ToSnakeCase();
-    public string ServiceNameSnakeCaseAndApi => Utilities.GetSnakeCasedNameAndApi(ServiceNameRaw);
-    public string ServiceNamePascalCasedAndDotApi => Utilities.GetPascalCasedNameAndDotApi(ServiceNameRaw);
+    public string ServiceNameSnakeCaseAndApi => NameExtensions.GetSnakeCasedNameAndApi(ServiceNameRaw);
+    public string ServiceNamePascalCasedAndDotApi => NameExtensions.GetPascalCasedNameAndDotApi(ServiceNameRaw);
     
-    public string ServiceRootFolder => Path.Combine(BasePath, Constants.ServicesDirectory, ServiceNameKebabCaseAndApi);
+    public string ServiceRootFolder => Path.Combine(BasePath, "services", ServiceNameKebabCaseAndApi);
     public string ServiceCsProjectFolder => Path.Combine(ServiceRootFolder, "src", ServiceNamePascalCasedAndDotApi);
     public string ServiceCsProjectFile => Path.Combine(ServiceCsProjectFolder, $"{ServiceNamePascalCasedAndDotApi}.csproj");
     

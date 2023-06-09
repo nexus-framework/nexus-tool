@@ -1,15 +1,9 @@
 using CaseExtensions;
 
-namespace Nexus;
+namespace Nexus.Extensions;
 
-public static class Utilities
+public static class NameExtensions
 {
-    /// <summary>
-    /// Replaces spaces with . and removes: ,/
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="replaceSpaceWith"></param>
-    /// <returns></returns>
     public static string CleanNameAndReplaceSpaces(string name, char replaceSpaceWith)
     {
         return name.Trim().ToLower()
@@ -19,11 +13,6 @@ public static class Utilities
             .Replace("/", "");
     }
     
-    /// <summary>
-    /// Returns service name like: project-api
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
     public static string GetKebabCasedNameAndApi(string name)
     {
         string cleanedName = CleanNameAndReplaceSpaces(name, '-');

@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
-using Nexus.Config;
+using Nexus.Models;
 
-namespace Nexus.Services;
+namespace Nexus.Config;
 
 public class ConfigurationService
 {

@@ -1,4 +1,4 @@
-namespace Nexus.Services;
+namespace Nexus.Models;
 
 public class PolicyCreationResult
 {

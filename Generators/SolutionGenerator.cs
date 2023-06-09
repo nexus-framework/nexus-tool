@@ -1,13 +1,11 @@
-﻿using CaseExtensions;
-using Nexus.Config;
-using static Nexus.Services.ConsoleUtilities;
+﻿using Nexus.Config;
+using Nexus.Extensions;
+using Nexus.Models;
+using Nexus.Services;
+using static Nexus.Extensions.ConsoleUtilities;
+using static Nexus.Extensions.DirectoryExtensions;
 
-namespace Nexus.Services;
-
-public static class Constants
-{
-    public const string ServicesDirectory = "services";
-}
+namespace Nexus.Generators;
 
 public class SolutionGenerator
 {
@@ -25,7 +23,7 @@ public class SolutionGenerator
     public bool InitializeSolution(string rawName)
     {
         // create solution file
-        string solutionName = Utilities.GetKebabCasedNameWithoutApi(rawName);
+        string solutionName = NameExtensions.GetKebabCasedNameWithoutApi(rawName);
         bool solutionCreated = CreateSolutionFile(solutionName);
         if (!solutionCreated)
         {
@@ -129,16 +127,7 @@ public class SolutionGenerator
         }
     }
 
-    private static void EnsureDirectories(string[] directories)
-    {
-        foreach (string directory in directories)
-        {
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-        }
-    }
+
 
     private bool CreateSolutionFile(string solutionName)
     {
@@ -162,7 +151,7 @@ public class SolutionGenerator
     
     private void EnsureServicesFolder()
     {
-        var servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), Constants.ServicesDirectory);
+        var servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), "services");
         if (!Directory.Exists(servicesFolderPath))
         {
             Directory.CreateDirectory(servicesFolderPath);

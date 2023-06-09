@@ -1,8 +1,8 @@
 using Nexus.Config;
-using Nexus.Runners;
-using static Nexus.Services.ConsoleUtilities;
+using Nexus.Services;
+using static Nexus.Extensions.ConsoleUtilities;
 
-namespace Nexus.Services;
+namespace Nexus.Runners;
 
 internal class NexusRunner
 {

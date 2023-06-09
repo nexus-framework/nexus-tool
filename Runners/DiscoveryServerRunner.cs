@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using Nexus.Services;
-using static Nexus.Services.ConsoleUtilities;
+using Nexus.Config;
+using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
 

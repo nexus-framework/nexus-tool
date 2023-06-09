@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Newtonsoft.Json;
+using Nexus.Models;
 
 namespace Nexus.Services;
 

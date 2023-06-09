@@ -6,7 +6,7 @@ using BetterConsoles.Tables.Configuration;
 using BetterConsoles.Tables.Models;
 using Nexus.Runners;
 
-namespace Nexus.Services;
+namespace Nexus.Extensions;
 
 public static class ConsoleUtilities
 {

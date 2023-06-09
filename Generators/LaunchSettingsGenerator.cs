@@ -1,4 +1,4 @@
-namespace Nexus.Generators.LaunchSettings;
+namespace Nexus.Generators;
 
 public class LaunchSettingsGenerator : ProjectCodeGenerator
 {
