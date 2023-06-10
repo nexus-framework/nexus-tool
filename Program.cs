@@ -45,6 +45,6 @@ public class Program
     static int InitAndReturnExitCode(InitOptions options)
     {
         SolutionGenerator solutionGenerator = new ();
-        return solutionGenerator.InitializeSolution(options.Name) ? 0 : 1;
+        return solutionGenerator.InitializeSolution(options.Name).Result ? 0 : 1;
     }
 }

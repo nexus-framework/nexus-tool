@@ -23,35 +23,25 @@ public class SolutionGenerator
         _random = new Random();
     }
 
-    public bool InitializeSolution(string rawName)
+    public async Task<bool> InitializeSolution(string rawName)
     {
-        // create solution file
         string solutionName = NameExtensions.GetKebabCasedNameWithoutApi(rawName);
-        bool solutionCreated = CreateSolutionFile(solutionName);
-        if (!solutionCreated)
+        
+        // Download solution
+        var solutionDirectory = _configurationService.GetBasePath();
+        await _gitHubService.DownloadSolutionTemplate(solutionName, solutionDirectory);
+        
+        // Replace ProjectName in nexus config
+        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+        if (config == null)
         {
             return false;
         }
+
+        config.ProjectName = solutionName;
+        _configurationService.WriteConfiguration(config);
         
-        // add config
-        bool configInitialized = _configurationService.InitializeConfig(rawName);
-        if (!configInitialized)
-        {
-            return false;
-        }
-        
-        // ensure services folder
-        EnsureServicesFolder();
-        
-        // add api gateway
-        
-        
-        // add hc dashboard
-        // add discovery server
-        
-        // Prerequisites:
-        // * Library Packages to be published to nuget
-        // * API Gateway/HealthCheck Dashboard published as templates/nuget packages
+        Console.WriteLine("Done");
         return true;
     }
     
@@ -87,20 +77,27 @@ public class SolutionGenerator
         await _gitHubService.DownloadServiceTemplate(info.ServiceCsProjectFolder);
         
         // Replace variables
+        Console.WriteLine("Updating service values");
         ReplaceTemplateVariables(info);
         
         // Update docker compose yml
         // Add DB
         // Add networks
+        Console.WriteLine("Updating docker-compose");
         UpdateDockerComposeLocalYaml(info);
 
         // Update prometheus yml
+        Console.WriteLine("Updating prometheus config");
         UpdatePrometheusLocalYaml(info);
 
+        Console.WriteLine("Updating env file");
         UpdateEnvironmentFile(info);
         
         // Add service to solution
+        Console.WriteLine("Adding service to solution");
         AddServiceCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
+        
+        Console.WriteLine("Done");
         return _configurationService.AddService(info);
     }
 

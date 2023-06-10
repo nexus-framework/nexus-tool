@@ -4,7 +4,8 @@ namespace Nexus.Services;
 
 public class GitHubService
 {
-    private const string TemplateUrl = @"https://codeload.github.com/afroze9/nexus-template/zip/refs/heads/master";
+    private const string ServiceTemplateUrl = @"https://codeload.github.com/afroze9/nexus-template/zip/refs/heads/master";
+    private const string SolutionTemplateUrl = @"https://codeload.github.com/afroze9/nexus/zip/refs/heads/master";
     
     public async Task DownloadServiceTemplate(string destPath)
     {
@@ -22,9 +23,10 @@ public class GitHubService
             }
 
             // download files to temp
+            Console.WriteLine("Downloading service template");
             using (HttpClient? client = new HttpClient())
             {
-                HttpResponseMessage? response = await client.GetAsync(TemplateUrl);
+                HttpResponseMessage? response = await client.GetAsync(ServiceTemplateUrl);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -41,8 +43,10 @@ public class GitHubService
                     }
                 }
             }
+            Console.WriteLine("Download complete");
 
             // Extract files
+            Console.WriteLine("Extracting solution");
             if (File.Exists(downloadFilePath))
             {
                 if (!Directory.Exists(extractPath))
@@ -55,7 +59,6 @@ public class GitHubService
 
             // move files to dest
             CopyDirectory(templateSourcePath, destPath, true);
-
         }
         catch (Exception ex)
         {
@@ -70,7 +73,78 @@ public class GitHubService
         }
     }
     
-    static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+    public async Task DownloadSolutionTemplate(string solutionName, string solutionDirectory)
+    {
+        // create temp folder
+        string? tempFolderPath = Path.Combine(Path.GetTempPath(), "nexus", Guid.NewGuid().ToString());
+        string? downloadFilePath = Path.Combine(tempFolderPath, "template.zip");
+        string? extractPath = Path.Combine(tempFolderPath, "template");
+        string? templateSourcePath = Path.Combine(extractPath, "nexus-master");
+
+        try
+        {
+            if (!Directory.Exists(tempFolderPath))
+            {
+                Directory.CreateDirectory(tempFolderPath);
+            }
+
+            // download files to temp
+            Console.WriteLine("Downloading solution template");
+            using (HttpClient? client = new HttpClient())
+            {
+                HttpResponseMessage? response = await client.GetAsync(SolutionTemplateUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
+                {
+                    await using (FileStream? fileStream = new FileStream(downloadFilePath, FileMode.Create,
+                                     FileAccess.ReadWrite,
+                                     FileShare.ReadWrite))
+                    {
+                        await contentStream.CopyToAsync(fileStream);
+                    }
+                }
+            }
+            Console.WriteLine("Download complete");
+
+            // Extract files
+            Console.WriteLine("Extracting solution");
+            if (File.Exists(downloadFilePath))
+            {
+                if (!Directory.Exists(extractPath))
+                {
+                    Directory.CreateDirectory(extractPath);
+                }
+
+                ZipFile.ExtractToDirectory(downloadFilePath, extractPath);
+            }
+
+            // move files to dest
+            CopyDirectory(templateSourcePath, solutionDirectory, true);
+
+            Console.WriteLine("Updating config");
+            string solutionFileSourcePath = Path.Combine(solutionDirectory, "nexus.sln");
+            string solutionFileDestPath = Path.Combine(solutionDirectory, $"{solutionName}.sln");
+            File.Move(solutionFileSourcePath, solutionFileDestPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            if (Directory.Exists(tempFolderPath))
+            {
+                Directory.Delete(tempFolderPath, true);
+            }
+        }
+    }
+    
+    private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
     {
         // Get information about the source directory
         DirectoryInfo? dir = new DirectoryInfo(sourceDir);

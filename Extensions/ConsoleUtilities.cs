@@ -112,7 +112,7 @@ public static class ConsoleUtilities
                 ForegroundColor = Color.Gold,
             }, rowsFormat: new CellFormat { ForegroundColor = Color.Gold })
             .Build();
-        servicesTable.Config = TableConfig.UnicodeAlt();
+        servicesTable.Config = TableConfig.Unicode();
 
         servicesTable.AddRow("Consul", "http://localhost:8500");
         servicesTable.AddRow("Jaeger", "http://localhost:16686");
