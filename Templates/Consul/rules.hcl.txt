@@ -1,6 +1,0 @@
-key_prefix "{serviceName}/" {
-  policy = "read"
-  policy = "write"
-  policy = "list"
-}
-
