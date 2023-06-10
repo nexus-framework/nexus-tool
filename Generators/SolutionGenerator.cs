@@ -1,5 +1,7 @@
 ﻿using System.Text;
 using CaseExtensions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Nexus.Config;
 using Nexus.Extensions;
 using Nexus.Models;
@@ -28,7 +30,7 @@ public class SolutionGenerator
         string solutionName = NameExtensions.GetKebabCasedNameWithoutApi(rawName);
         
         // Download solution
-        var solutionDirectory = _configurationService.GetBasePath();
+        string solutionDirectory = _configurationService.GetBasePath();
         await _gitHubService.DownloadSolutionTemplate(solutionName, solutionDirectory);
         
         // Replace ProjectName in nexus config
@@ -93,12 +95,48 @@ public class SolutionGenerator
         Console.WriteLine("Updating env file");
         UpdateEnvironmentFile(info);
         
+        // Add service to hc config
+        UpdateHcConfig(info);
+        
         // Add service to solution
         Console.WriteLine("Adding service to solution");
         AddServiceCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
         
         Console.WriteLine("Done");
         return _configurationService.AddService(info);
+    }
+
+    private void UpdateHcConfig(ServiceInitializationInfo info)
+    {
+        Console.WriteLine("Adding service to Health Checks");
+        string appConfigPath = Path.Combine(_configurationService.HealthChecksDashboardConsulDirectory, "app-config.json");
+
+        if (!File.Exists(appConfigPath))
+        {
+            return;
+        }
+
+        string appConfigJson = File.ReadAllText(appConfigPath);
+        dynamic? appConfig = JsonConvert.DeserializeObject<dynamic>(appConfigJson);
+
+        if (appConfig == null)
+        {
+            return;
+        }
+        
+        JArray clients = appConfig.HealthCheck.Clients as JArray ?? new JArray();
+        JObject newClient = new JObject
+        {
+            ["Name"] = info.ServiceNamePascalCasedAndDotApi,
+            ["ServiceName"] = info.ServiceNameKebabCaseAndApi,
+            ["Url"] = $"https://localhost:{info.HttpsPort}/actuator/health",
+        };
+        clients.Add(newClient);
+
+        appConfig.HealthCheck.Clients = clients;
+        string updatedJson = JsonConvert.SerializeObject(appConfig);
+        
+        File.WriteAllText(appConfigPath, updatedJson);
     }
 
     private void UpdateEnvironmentFile(ServiceInitializationInfo info)

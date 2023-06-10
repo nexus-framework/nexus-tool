@@ -10,7 +10,7 @@ public class ConfigurationService
     private const string ServiceAdded = "Service added";
     private const string ServiceAlreadyExists = "Service already exists";
 
-    //public string GetBasePath() => @"C:\source\dotnet\temp";
+    // public string GetBasePath() => @"C:\source\dotnet\temp";
     public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
@@ -145,7 +145,7 @@ public class ConfigurationService
 
     public int GetNewServicePort()
     {
-        var config = ReadConfiguration();
+        NexusSolutionConfiguration? config = ReadConfiguration();
 
         if (config == null)
         {
@@ -157,7 +157,7 @@ public class ConfigurationService
 
     public int GetNewDbPort()
     {
-        var config = ReadConfiguration();
+        NexusSolutionConfiguration? config = ReadConfiguration();
 
         if (config == null)
         {
