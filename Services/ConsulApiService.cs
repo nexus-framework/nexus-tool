@@ -12,7 +12,7 @@ public class ConsulApiService
     
     public PolicyCreationResult CreateConsulPolicy(string globalToken, string rules, string serviceName)
     {
-        var client = GetConsulHttpClient(globalToken);
+        HttpClient? client = GetConsulHttpClient(globalToken);
         PolicyCreationResult policy = GetConsulPolicyBody(serviceName, rules);
         StringContent content = new (policy.Json, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(PolicyApiUrl, content).Result;
@@ -79,8 +79,8 @@ public class ConsulApiService
 
     public string CreateToken(string globalToken, string serviceName, string policyName)
     {
-        var client = GetConsulHttpClient(globalToken);
-        var tokenJson = GetConsulTokenBody(serviceName, policyName);
+        HttpClient? client = GetConsulHttpClient(globalToken);
+        string? tokenJson = GetConsulTokenBody(serviceName, policyName);
         
         StringContent content = new (tokenJson, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(TokenApiUrl, content).Result;
@@ -92,7 +92,7 @@ public class ConsulApiService
 
     public void UploadKv(string serviceName, string json, string globalToken)
     {
-        var client = GetConsulHttpClient(globalToken);
+        HttpClient? client = GetConsulHttpClient(globalToken);
         StringContent content = new (json, Encoding.UTF8, "application/json");
         string kvUrl = string.Format(KvApiUrl, serviceName);
         HttpResponseMessage response = client.PutAsync(kvUrl, content).Result;

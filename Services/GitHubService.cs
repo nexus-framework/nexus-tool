@@ -9,10 +9,10 @@ public class GitHubService
     public async Task DownloadServiceTemplate(string destPath)
     {
         // create temp folder
-        var tempFolderPath = Path.Combine(Path.GetTempPath(), "nexus", Guid.NewGuid().ToString());
-        var downloadFilePath = Path.Combine(tempFolderPath, "template.zip");
-        var extractPath = Path.Combine(tempFolderPath, "template");
-        var templateSourcePath = Path.Combine(extractPath, "nexus-template-master", "ServiceTemplate");
+        string? tempFolderPath = Path.Combine(Path.GetTempPath(), "nexus", Guid.NewGuid().ToString());
+        string? downloadFilePath = Path.Combine(tempFolderPath, "template.zip");
+        string? extractPath = Path.Combine(tempFolderPath, "template");
+        string? templateSourcePath = Path.Combine(extractPath, "nexus-template-master", "ServiceTemplate");
 
         try
         {
@@ -22,18 +22,18 @@ public class GitHubService
             }
 
             // download files to temp
-            using (var client = new HttpClient())
+            using (HttpClient? client = new HttpClient())
             {
-                var response = await client.GetAsync(TemplateUrl);
+                HttpResponseMessage? response = await client.GetAsync(TemplateUrl);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     return;
                 }
 
-                await using (var contentStream = await response.Content.ReadAsStreamAsync())
+                await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
                 {
-                    await using (var fileStream = new FileStream(downloadFilePath, FileMode.Create,
+                    await using (FileStream? fileStream = new FileStream(downloadFilePath, FileMode.Create,
                                      FileAccess.ReadWrite,
                                      FileShare.ReadWrite))
                     {
@@ -73,7 +73,7 @@ public class GitHubService
     static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
     {
         // Get information about the source directory
-        var dir = new DirectoryInfo(sourceDir);
+        DirectoryInfo? dir = new DirectoryInfo(sourceDir);
 
         // Check if the source directory exists
         if (!dir.Exists)

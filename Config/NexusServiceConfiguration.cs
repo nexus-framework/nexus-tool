@@ -9,4 +9,6 @@ public class NexusServiceConfiguration
     public string RootNamespace { get; set; } = string.Empty;
     
     public int Port { get; set; }
+    
+    public int? DbPort { get; set; }
 }

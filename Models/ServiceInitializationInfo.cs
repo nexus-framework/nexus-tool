@@ -10,21 +10,24 @@ public class ServiceInitializationInfo
         string serviceNameRaw,
         string basePath,
         int httpsPort,
-        int httpPort)
+        int httpPort,
+        int dbPort)
     {
         SolutionName = solutionName;
         ServiceNameRaw = serviceNameRaw;
         BasePath = basePath;
         HttpsPort = httpsPort;
         HttpPort = httpPort;
+        DbPort = dbPort;
     }
     
     public string ServiceToken { get; set; } = string.Empty;
     public string CertificatePassword { get; set; } = string.Empty;
     public int HttpPort { get; set; }
     public int HttpsPort { get; set; }
-    public string DbHost { get; set; } = string.Empty;
-    public string DbName { get; set; } = string.Empty;
+    public string DbHost => $"{ServiceNameKebabCase}-db";
+
+    public string DbName => $"{SolutionNameSnakeCase}_{ServiceNameKebabCase}";
     public int DbPort { get; set; }
 
     public string RootNamespace => ServiceNamePascalCasedAndDotApi.Replace(".", "");

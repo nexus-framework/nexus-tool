@@ -36,9 +36,9 @@ internal class NexusRunner
             new (_configurationService, config.Framework.HealthChecksDashboard, RunType.Local, _consulApiService);
 
         List<StandardServiceRunner> runners = new ();
-        foreach (var configuration in config.Services)
+        foreach (NexusServiceConfiguration? configuration in config.Services)
         {
-            var runner =
+            StandardServiceRunner? runner =
                 new StandardServiceRunner(_configurationService, configuration, RunType.Local, _consulApiService);
             runners.Add(runner);
         }

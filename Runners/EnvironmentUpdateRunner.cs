@@ -32,9 +32,9 @@ public class EnvironmentUpdateRunner : ComponentRunner
 
         string[] lines = File.ReadAllLines(envFilePath);
         
-        foreach (var serviceToken in state.ServiceTokens)
+        foreach (KeyValuePair<string, string> serviceToken in state.ServiceTokens)
         {
-            var envVar = $"{serviceToken.Key.ToSnakeCase().ToUpperInvariant()}_TOKEN";
+            string? envVar = $"{serviceToken.Key.ToSnakeCase().ToUpperInvariant()}_TOKEN";
             for(int i =0; i < lines.Length; i++)
             {
                 if (lines[i].StartsWith(envVar))

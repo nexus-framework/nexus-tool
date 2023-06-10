@@ -18,11 +18,17 @@ public class ConfigurationService
         return Path.Combine(GetBasePath(), "nexus.config.json");
     }
 
-    public string ApiGatewayOcelotDirectory => Path.Combine(GetBasePath(), @"\api-gateway\src\Nexus.ApiGateway\Ocelot");
-    public string ApiGatewayConsulDirectory => Path.Combine(GetBasePath(), @"\api-gateway\src\Nexus.ApiGateway\Consul");
-    public string HealthChecksDashboardConsulDirectory => Path.Combine(GetBasePath(), @"\health-checks-dashboard\src\Nexus.HealthChecksDashboard\Consul");
-    public string GetServiceConsulDirectory(string projectName) => Path.Combine(GetBasePath(), "services", "src", projectName, "Consul");
-    public string GetServiceAppSettingsFile(string projectName) => Path.Combine(GetBasePath(), "services", "src", projectName, "appsettings.json");
+    public string ApiGatewayOcelotDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Ocelot");
+    public string ApiGatewayAppSettingsFile => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\appsettings.json");
+    public string ApiGatewayConsulDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Consul");
+    public string HealthChecksDashboardConsulDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\Consul");
+    public string HealthChecksDashboardAppSettingsFile => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\appsettings.json");
+
+    public string GetServiceConsulDirectory(string serviceName, string projectName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
+
+    public string GetServiceAppSettingsFile(string serviceName, string projectName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "appsettings.json");
     
     public NexusSolutionConfiguration? ReadConfiguration()
     {
@@ -104,7 +110,7 @@ public class ConfigurationService
         
         config.Services.Add(new NexusServiceConfiguration
         {
-            ServiceName = info.ServiceNameKebabCase,
+            ServiceName = info.ServiceNameKebabCaseAndApi,
             ProjectName = info.ServiceNamePascalCasedAndDotApi,
             RootNamespace = info.RootNamespace,
             Port = info.HttpsPort,
@@ -133,5 +139,31 @@ public class ConfigurationService
         return false;
     }
 
-    public string GetEnvironmentFile() => Path.Combine(GetBasePath(), ".env");
+    public string EnvironmentFile => Path.Combine(GetBasePath(), ".env");
+    public string DockerComposeLocalFile => Path.Combine(GetBasePath(), "docker-compose-local.yml");
+    public string PrometheusLocalFile => Path.Combine(GetBasePath(), "prometheus-local.yml");
+
+    public int GetNewServicePort()
+    {
+        var config = ReadConfiguration();
+
+        if (config == null)
+        {
+            return 0;
+        }
+
+        return config.Services.Select(x => x.Port).Max() + 2;
+    }
+
+    public int GetNewDbPort()
+    {
+        var config = ReadConfiguration();
+
+        if (config == null)
+        {
+            return 0;
+        }
+
+        return config.Services.Where(x => x.DbPort.HasValue).Select(x => x.DbPort).Max() + 2 ?? 5438;
+    }
 }

@@ -18,7 +18,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
     protected override void UpdateAppConfig(RunState state)
     {
         Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName),
+        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -44,7 +44,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed upated config for {Configuration.ServiceName} to Consul KV");
+        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
     private void ModifyAppConfig(dynamic appConfig, RunState state)

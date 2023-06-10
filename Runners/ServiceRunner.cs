@@ -41,7 +41,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
         
         // Create token
         Console.WriteLine($"Creating token for {Configuration.ServiceName}");
-        var serviceToken = CreateToken(state, policy.Name);
+        string? serviceToken = CreateToken(state, policy.Name);
 
         if (string.IsNullOrEmpty(serviceToken))
         {
@@ -69,7 +69,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
     protected virtual PolicyCreationResult CreatePolicy(string globalToken)
     {
-        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName), "rules.hcl");
+        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName), "rules.hcl");
 
         if (!File.Exists(consulRulesFile))
         {
@@ -91,7 +91,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
     protected virtual void UpdateAppConfig(RunState state)
     {
         Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName),
+        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -120,7 +120,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
     
     protected virtual void UpdateAppSettings(RunState state)
     {
-        string appSettingsPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceAppSettingsFile(Configuration.ServiceName));
+        string appSettingsPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceAppSettingsFile(Configuration.ServiceName, Configuration.ProjectName));
 
         if (!File.Exists(appSettingsPath))
         {

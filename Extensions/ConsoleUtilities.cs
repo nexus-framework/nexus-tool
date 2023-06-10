@@ -80,7 +80,7 @@ public static class ConsoleUtilities
 
     public static void PrintState(RunState state)
     {
-        var tokenTable = new TableBuilder()
+        Table? tokenTable = new TableBuilder()
             .AddColumn("Service", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
@@ -94,13 +94,13 @@ public static class ConsoleUtilities
             .Build();
         
         tokenTable.AddRow("Consul", state.GlobalToken);
-        foreach (var serviceToken in state.ServiceTokens)
+        foreach (KeyValuePair<string, string> serviceToken in state.ServiceTokens)
         {
             tokenTable.AddRow(serviceToken.Key, serviceToken.Value);
         }
         tokenTable.Config = TableConfig.Unicode();
         
-        var servicesTable = new TableBuilder()
+        Table? servicesTable = new TableBuilder()
             .AddColumn("Service", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,

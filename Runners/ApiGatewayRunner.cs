@@ -57,7 +57,30 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
     protected override void UpdateAppSettings(RunState state)
     {
         UpdateOcelotConfig(state);
-        base.UpdateAppSettings(state);
+        string appSettingsPath = Path.Combine(ConfigurationService.ApiGatewayAppSettingsFile);
+
+        if (!File.Exists(appSettingsPath))
+        {
+            Console.Error.WriteLine($"File not found: appsettings.json for {Configuration.ServiceName}");
+            return;
+        }
+
+        string appSettingsJson = File.ReadAllText(appSettingsPath);
+        dynamic? appSettings = JsonConvert.DeserializeObject<dynamic>(appSettingsJson);
+
+        if (appSettings == null)
+        {
+            Console.Error.WriteLine($"Unable to read file: appsettings.json for {Configuration.ServiceName}");
+            return;
+        }
+
+        appSettings.ConsulKV.Url = "http://localhost:8500";
+        appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
+        
+        string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
+        File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
+        
+        Console.WriteLine($"Updated appsettings.json for {Configuration.ServiceName}");
     }
 
     protected override PolicyCreationResult CreatePolicy(string globalToken)
