@@ -114,6 +114,7 @@ public class ConfigurationService
             ProjectName = info.ServiceNamePascalCasedAndDotApi,
             RootNamespace = info.RootNamespace,
             Port = info.HttpsPort,
+            DbPort = info.DbPort,
         });
 
         WriteConfiguration(config);
