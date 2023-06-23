@@ -21,14 +21,19 @@ public class ConfigurationService
     public string ApiGatewayOcelotDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Ocelot");
     public string ApiGatewayAppSettingsFile => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\appsettings.json");
     public string ApiGatewayConsulDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Consul");
+    public string ApiGatewayCsProjFile => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Nexus.ApiGateway.csproj");
     public string HealthChecksDashboardConsulDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\Consul");
     public string HealthChecksDashboardAppSettingsFile => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\appsettings.json");
+    public string HealthChecksDashboardCsProjFile => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\Nexus.HealthChecksDashboard.csproj");
 
     public string GetServiceConsulDirectory(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
 
     public string GetServiceAppSettingsFile(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "appsettings.json");
+    
+    public string GetServiceCsProjFile(string serviceName, string projectName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, $"{projectName}.csproj");
     
     public NexusSolutionConfiguration? ReadConfiguration()
     {
@@ -60,43 +65,6 @@ public class ConfigurationService
             return false;
         }
 
-        return true;
-    }
-
-    public bool InitializeConfig(string name)
-    {
-        if (ConfigurationExists())
-        {
-            Console.WriteLine(ConfigAlreadyInitiated);
-            return false;
-        }
-
-        NexusSolutionConfiguration nexusSolutionConfig = new()
-        {
-            ProjectName = name,
-            Framework = new FrameworkConfiguration
-            {
-                ApiGateway = new ()
-                {
-                    Port = 7068,
-                    ServiceName = "api-gateway",
-                    ProjectName = "Nexus.ApiGateway",
-                    RootNamespace = "Nexus.ApiGateway",
-                },
-                HealthChecksDashboard = new ()
-                {
-                    Port = 5051,
-                    ServiceName = "health-checks-dashboard",
-                    ProjectName = "Nexus.HealthChecksDashboard",
-                    RootNamespace = "Nexus.HealthChecksDashboard",
-                },
-            },
-            Services = new(),
-        };
-
-        WriteConfiguration(nexusSolutionConfig);
-
-        Console.WriteLine(ConfigInitiated);
         return true;
     }
 

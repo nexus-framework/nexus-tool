@@ -38,8 +38,7 @@ internal class NexusRunner
         List<StandardServiceRunner> runners = new ();
         foreach (NexusServiceConfiguration? configuration in config.Services)
         {
-            StandardServiceRunner? runner =
-                new StandardServiceRunner(_configurationService, configuration, RunType.Local, _consulApiService);
+            StandardServiceRunner? runner = new (_configurationService, configuration, RunType.Local, _consulApiService);
             runners.Add(runner);
         }
 

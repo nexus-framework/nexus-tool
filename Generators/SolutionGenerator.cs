@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Xml.Linq;
 using CaseExtensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -43,7 +44,6 @@ public class SolutionGenerator
         config.ProjectName = solutionName;
         _configurationService.WriteConfiguration(config);
         
-        Console.WriteLine("Done");
         return true;
     }
     
@@ -99,8 +99,7 @@ public class SolutionGenerator
         UpdateHcConfig(info);
         
         // Add service to solution
-        Console.WriteLine("Adding service to solution");
-        AddServiceCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
+        AddCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
         
         Console.WriteLine("Done");
         return _configurationService.AddService(info);
@@ -125,7 +124,7 @@ public class SolutionGenerator
         }
         
         JArray clients = appConfig.HealthCheck.Clients as JArray ?? new JArray();
-        JObject newClient = new JObject
+        JObject newClient = new()
         {
             ["Name"] = info.ServiceNamePascalCasedAndDotApi,
             ["ServiceName"] = info.ServiceNameKebabCaseAndApi,
@@ -148,7 +147,7 @@ public class SolutionGenerator
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new ();
         string connectionString = $"User ID=developer;Password=dev123;Host={info.DbHost};Port={info.DbPort};Database={info.DbName}";
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_TOKEN={info.ServiceToken}");
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_CERT_PASSWORD={info.CertificatePassword}");
@@ -184,13 +183,13 @@ public class SolutionGenerator
         dynamic yamlObject = deserializer.Deserialize<dynamic>(new StringReader(text));
         List<dynamic>? scrapeConfigs = (List<dynamic>)yamlObject["scrape_configs"];
 
-        Dictionary<string, object> newScrapeConfig = new Dictionary<string, object>
+        Dictionary<string, object> newScrapeConfig = new()
         {
             { "job_name", info.ServiceNameKebabCaseAndApi },
             {
                 "static_configs", new List<Dictionary<string, object>>
                 {
-                    new Dictionary<string, object>
+                    new()
                     {
                         { "targets", new List<string> { $"host.docker.internal:{info.HttpsPort}" } },
                     },
@@ -293,15 +292,7 @@ public class SolutionGenerator
         }
     }
 
-    private bool CreateSolutionFile(string solutionName)
-    {
-        string slnFolder = _configurationService.GetBasePath(); 
-        RunPowershellCommand($"dotnet new sln --output \"{slnFolder}\" --name {solutionName}");
-        Console.WriteLine("Solution generated successfully!");
-        return true;
-    }
-
-    private static bool AddServiceCsProjectFileToSolution(string solutionPath, string csProjectFilePath)
+    private static bool AddCsProjectFileToSolution(string solutionPath, string csProjectFilePath)
     {
         if (!File.Exists(csProjectFilePath))
         {
@@ -309,16 +300,157 @@ public class SolutionGenerator
             return false;
         }
 
+        Console.WriteLine($"Adding \"{csProjectFilePath}\" to the solution");
         RunPowershellCommand($"dotnet sln \"{solutionPath}\" add \"{csProjectFilePath}\"");
         return true;
     }
-    
-    private void EnsureServicesFolder()
+
+    public async Task<bool> Eject()
     {
-        string servicesFolderPath = Path.Combine(_configurationService.GetBasePath(), "services");
-        if (!Directory.Exists(servicesFolderPath))
+        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+
+        if (config == null)
         {
-            Directory.CreateDirectory(servicesFolderPath);
+            return false;
+        }
+        
+        string librariesFolder = Path.Combine(_configurationService.GetBasePath(), "libraries");
+        if (Directory.Exists(librariesFolder))
+        {
+            Console.WriteLine("Libraries already exist");
+            return false;
+        }
+
+        string solutionFile = Path.Combine(_configurationService.GetBasePath(), $"{config.ProjectName}.sln");
+        
+        // Download libraries
+        await _gitHubService.DownloadLibraries(librariesFolder);
+        
+        // Clean up libraries folder
+        CleanupLibrariesFolder(librariesFolder);
+
+        // Add libraries to sln
+        AddLibrariesToSolutionFile(librariesFolder, solutionFile);
+        
+        // Update csproj files
+        ReplaceLibrariesInCsProjFiles(librariesFolder, config);
+        
+        return true;
+    }
+
+    private void ReplaceLibrariesInCsProjFiles(string librariesFolder, NexusSolutionConfiguration config)
+    {
+        string librariesSrcPath = Path.Combine(librariesFolder, "src");
+        string[] libraryProjectFiles = Directory.GetFiles(librariesSrcPath, "*.csproj", SearchOption.AllDirectories);
+        Dictionary<string, string> packages = libraryProjectFiles
+            .Select(x => new KeyValuePair<string, string>(x, Path.GetFileName(x).Replace(".csproj", "")))
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        List<string> csProjFilesToUpdate = new ()
+        {
+            _configurationService.ApiGatewayCsProjFile,
+            _configurationService.HealthChecksDashboardCsProjFile,
+        };
+        
+        foreach (NexusServiceConfiguration serviceConfig in config.Services)
+        {
+            csProjFilesToUpdate.Add(_configurationService.GetServiceCsProjFile(serviceConfig.ServiceName, serviceConfig.ProjectName));
+        }
+
+        foreach (string csProj in csProjFilesToUpdate)
+        {
+            ReplaceLibrariesInCsProjFile(csProj, packages);
+        }
+    }
+
+    private void ReplaceLibrariesInCsProjFile(string csProjFilePath, Dictionary<string, string> packages)
+    {
+        if (!File.Exists(csProjFilePath))
+        {
+            return;
+        }
+
+        string? csProjFolderPath = Path.GetDirectoryName(csProjFilePath);
+
+        if (csProjFolderPath == null)
+        {
+            return;
+        }
+
+        XDocument csProjDoc = XDocument.Load(csProjFilePath);
+        Dictionary<string, string> packagesToAdd = new ();
+        
+        foreach (KeyValuePair<string, string> package in packages)
+        {
+            XElement? packageRefElement = csProjDoc.Root?.Descendants("PackageReference")
+                .FirstOrDefault(e => e.Attribute("Include")?.Value == package.Value);
+            
+            if (packageRefElement != null)
+            {
+                packageRefElement.Remove();
+                packagesToAdd.Add(package.Key, package.Value);
+                Console.WriteLine($"Remove {package.Value} from {csProjFilePath}");
+            }
+        }
+
+        if (packagesToAdd.Count > 0)
+        {
+            XElement itemGroup = new ("ItemGroup");
+
+            foreach (KeyValuePair<string, string> package in packagesToAdd)
+            {
+                string path = Path.GetRelativePath(csProjFolderPath, package.Key);
+                XElement projectRef = new ("ProjectReference");
+                projectRef.SetAttributeValue("Include", path);
+                itemGroup.Add(projectRef);
+                
+                Console.WriteLine($"Added {path} to {csProjFilePath}");
+            }
+
+            csProjDoc.Root?.Add(itemGroup);
+        }
+        
+        csProjDoc.Save(csProjFilePath);
+    }
+
+    private void AddLibrariesToSolutionFile(string librariesFolder, string solutionPath)
+    {
+        Console.WriteLine(librariesFolder);
+        Console.WriteLine(solutionPath);
+        string srcPath = Path.Combine(librariesFolder, "src");
+        string testsPath = Path.Combine(librariesFolder, "tests");
+
+        string[] srcProjects = Directory.GetFiles(srcPath, "*.csproj", SearchOption.AllDirectories);
+        string[] testProjects = Directory.GetFiles(testsPath, "*.csproj", SearchOption.AllDirectories);
+        IEnumerable<string> allProjects = srcProjects.Concat(testProjects);
+
+        foreach (string project in allProjects)
+        {
+            AddCsProjectFileToSolution(solutionPath, project);
+        }
+    }
+
+    private void CleanupLibrariesFolder(string librariesFolder)
+    {
+        // Remove sln file
+        string slnFile = Path.Combine(librariesFolder, "nexus-libraries.sln");
+        if (File.Exists(slnFile))
+        {
+            File.Delete(slnFile);
+        }
+
+        // Remove global json
+        string globalJsonFile = Path.Combine(librariesFolder, "global.json");
+        if (File.Exists(globalJsonFile))
+        {
+            File.Delete(globalJsonFile);
+        }
+
+        // Remove .github folder
+        string ghFolder = Path.Combine(librariesFolder, ".github");
+        if (Directory.Exists(ghFolder))
+        {
+            Directory.Delete(ghFolder, true);
         }
     }
 }

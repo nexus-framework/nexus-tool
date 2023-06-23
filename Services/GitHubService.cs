@@ -6,6 +6,7 @@ public class GitHubService
 {
     private const string ServiceTemplateUrl = @"https://codeload.github.com/afroze9/nexus-template/zip/refs/heads/master";
     private const string SolutionTemplateUrl = @"https://codeload.github.com/afroze9/nexus/zip/refs/heads/master";
+    private const string LibrariesUrl = @"https://codeload.github.com/afroze9/nexus-libraries/zip/refs/heads/master";
     
     public async Task DownloadServiceTemplate(string destPath)
     {
@@ -24,7 +25,7 @@ public class GitHubService
 
             // download files to temp
             Console.WriteLine("Downloading service template");
-            using (HttpClient? client = new HttpClient())
+            using (HttpClient? client = new ())
             {
                 HttpResponseMessage? response = await client.GetAsync(ServiceTemplateUrl);
 
@@ -35,7 +36,7 @@ public class GitHubService
 
                 await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
                 {
-                    await using (FileStream? fileStream = new FileStream(downloadFilePath, FileMode.Create,
+                    await using (FileStream? fileStream = new (downloadFilePath, FileMode.Create,
                                      FileAccess.ReadWrite,
                                      FileShare.ReadWrite))
                     {
@@ -90,7 +91,7 @@ public class GitHubService
 
             // download files to temp
             Console.WriteLine("Downloading solution template");
-            using (HttpClient? client = new HttpClient())
+            using (HttpClient? client = new ())
             {
                 HttpResponseMessage? response = await client.GetAsync(SolutionTemplateUrl);
 
@@ -101,7 +102,7 @@ public class GitHubService
 
                 await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
                 {
-                    await using (FileStream? fileStream = new FileStream(downloadFilePath, FileMode.Create,
+                    await using (FileStream? fileStream = new (downloadFilePath, FileMode.Create,
                                      FileAccess.ReadWrite,
                                      FileShare.ReadWrite))
                     {
@@ -147,7 +148,7 @@ public class GitHubService
     private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
     {
         // Get information about the source directory
-        DirectoryInfo? dir = new DirectoryInfo(sourceDir);
+        DirectoryInfo? dir = new (sourceDir);
 
         // Check if the source directory exists
         if (!dir.Exists)
@@ -173,6 +174,72 @@ public class GitHubService
             {
                 string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
                 CopyDirectory(subDir.FullName, newDestinationDir, true);
+            }
+        }
+    }
+
+    public async Task DownloadLibraries(string destPath)
+    {
+        // create temp folder
+        string? tempFolderPath = Path.Combine(Path.GetTempPath(), "nexus", Guid.NewGuid().ToString());
+        string? downloadFilePath = Path.Combine(tempFolderPath, "libraries.zip");
+        string? extractPath = Path.Combine(tempFolderPath, "libraries");
+        string? templateSourcePath = Path.Combine(extractPath, "nexus-libraries-master");
+
+        try
+        {
+            if (!Directory.Exists(tempFolderPath))
+            {
+                Directory.CreateDirectory(tempFolderPath);
+            }
+
+            // download files to temp
+            Console.WriteLine("Downloading libraries");
+            using (HttpClient? client = new ())
+            {
+                HttpResponseMessage? response = await client.GetAsync(LibrariesUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
+                {
+                    await using (FileStream? fileStream = new (downloadFilePath, FileMode.Create,
+                                     FileAccess.ReadWrite,
+                                     FileShare.ReadWrite))
+                    {
+                        await contentStream.CopyToAsync(fileStream);
+                    }
+                }
+            }
+            Console.WriteLine("Download complete");
+
+            // Extract files
+            Console.WriteLine("Extracting libraries");
+            if (File.Exists(downloadFilePath))
+            {
+                if (!Directory.Exists(extractPath))
+                {
+                    Directory.CreateDirectory(extractPath);
+                }
+
+                ZipFile.ExtractToDirectory(downloadFilePath, extractPath);
+            }
+
+            // move files to dest
+            CopyDirectory(templateSourcePath, destPath, true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            if (Directory.Exists(tempFolderPath))
+            {
+                Directory.Delete(tempFolderPath, true);
             }
         }
     }

@@ -11,12 +11,19 @@ public class Program
 {
     public static int Main(string[] args)
     {
-        return Parser.Default.ParseArguments<AddOptions, InitOptions, RunOptions>(args)
+        return Parser.Default.ParseArguments<AddOptions, InitOptions, RunOptions, EjectOptions>(args)
             .MapResult(
                 (AddOptions opts) => AddAndReturnExitCode(opts),
                 (InitOptions opts) => InitAndReturnExitCode(opts),
                 (RunOptions opts) => RunAndReturnExitCode(opts),
+                (EjectOptions opts) => Eject(opts),
                 errs => 1);
+    }
+
+    private static int Eject(EjectOptions opts)
+    {
+        SolutionGenerator solutionGenerator = new ();
+        return solutionGenerator.Eject().Result ? 0 : 1;
     }
 
     private static int RunAndReturnExitCode(RunOptions runOptions)
@@ -45,6 +52,18 @@ public class Program
     static int InitAndReturnExitCode(InitOptions options)
     {
         SolutionGenerator solutionGenerator = new ();
-        return solutionGenerator.InitializeSolution(options.Name).Result ? 0 : 1;
+        bool initResult = solutionGenerator.InitializeSolution(options.Name).Result;
+
+        if (!initResult)
+        {
+            return 1;
+        }
+        if (options.IncludeLibrarySource)
+        {
+            return solutionGenerator.Eject().Result ? 0 : 1;
+        }
+        
+        Console.WriteLine("Done");
+        return 0;
     }
 }
