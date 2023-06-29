@@ -51,6 +51,8 @@ public class RunState
 
     public Dictionary<string, string> ServiceUrls { get; set; } = new ();
 
+    public string DockerImageVersion { get; set; } = string.Empty;
+
     public Dictionary<string, string> ServiceTokens = new ();
 
 }

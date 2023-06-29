@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using CaseExtensions;
 using Newtonsoft.Json;
@@ -6,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using Nexus.Config;
 using Nexus.Extensions;
 using Nexus.Models;
+using Nexus.Runners;
 using Nexus.Services;
 using YamlDotNet.Serialization;
 using static Nexus.Extensions.ConsoleUtilities;
@@ -17,13 +19,11 @@ public class SolutionGenerator
 {
     private readonly ConfigurationService _configurationService;
     private readonly GitHubService _gitHubService;
-    private readonly Random _random;
 
     public SolutionGenerator()
     {
         _configurationService = new ConfigurationService();
         _gitHubService = new GitHubService();
-        _random = new Random();
     }
 
     public async Task<bool> InitializeSolution(string rawName)
@@ -41,8 +41,25 @@ public class SolutionGenerator
             return false;
         }
 
-        config.ProjectName = solutionName;
+        config.SolutionName = solutionName;
         _configurationService.WriteConfiguration(config);
+        
+        // Replace names in docker-compose
+        var dockerComposePath = _configurationService.GetDockerComposePath(RunType.Docker);
+
+        if (File.Exists(dockerComposePath))
+        {
+            var lines = await File.ReadAllLinesAsync(dockerComposePath);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (Regex.IsMatch(lines[i], @"image:\s+nexus.*:latest$"))
+                {
+                    lines[i] = lines[i].Replace("nexus", solutionName);
+                }
+            }
+            
+            await File.WriteAllLinesAsync(dockerComposePath, lines);
+        }
         
         return true;
     }
@@ -60,7 +77,7 @@ public class SolutionGenerator
         int dbPort = _configurationService.GetNewDbPort();
         
         ServiceInitializationInfo info = new (
-            solutionName: config.ProjectName,
+            solutionName: config.SolutionName,
             serviceNameRaw: rawName,
             basePath: _configurationService.GetBasePath(),
             httpsPort: httpsPort,
@@ -90,7 +107,8 @@ public class SolutionGenerator
 
         // Update prometheus yml
         Console.WriteLine("Updating prometheus config");
-        UpdatePrometheusLocalYaml(info);
+        UpdatePrometheusYaml(info, RunType.Local);
+        UpdatePrometheusYaml(info, RunType.Docker);
 
         Console.WriteLine("Updating env file");
         UpdateEnvironmentFile(info);
@@ -128,7 +146,6 @@ public class SolutionGenerator
         {
             ["Name"] = info.ServiceNamePascalCasedAndDotApi,
             ["ServiceName"] = info.ServiceNameKebabCaseAndApi,
-            ["Url"] = $"https://localhost:{info.HttpsPort}/actuator/health",
         };
         clients.Add(newClient);
 
@@ -158,18 +175,11 @@ public class SolutionGenerator
 
         string newVars = sb.ToString();
         File.AppendAllText(envFilePath, newVars);
-
-// COMPANY_API_TOKEN=4a26d8b7-584e-4f72-20d0-5855dddd8564
-// COMPANY_API_CERT_PASSWORD=dev123
-// COMPANY_API_PORT_INTERNAL=5032
-// COMPANY_API_PORT_EXTERNAL=5031
-// COMPANY_DB_CONNECTION_STRING="User ID=developer;Password=dev123;Host=company-db;Port=5438;Database=project_management_company"
-// COMPANY_DB_PORT=5438
     }
 
-    private void UpdatePrometheusLocalYaml(ServiceInitializationInfo info)
+    private void UpdatePrometheusYaml(ServiceInitializationInfo info, RunType runType)
     {
-        string ymlFilePath = _configurationService.PrometheusLocalFile;
+        string ymlFilePath = _configurationService.GetPrometheusFile(runType);
 
         if (!File.Exists(ymlFilePath))
         {
@@ -182,6 +192,12 @@ public class SolutionGenerator
 
         dynamic yamlObject = deserializer.Deserialize<dynamic>(new StringReader(text));
         List<dynamic>? scrapeConfigs = (List<dynamic>)yamlObject["scrape_configs"];
+        string target = runType switch
+        {
+            RunType.Local => $"host.docker.internal:{info.HttpsPort}",
+            RunType.Docker => info.ServiceNameKebabCase,
+            _ => "",
+        };
 
         Dictionary<string, object> newScrapeConfig = new()
         {
@@ -191,7 +207,7 @@ public class SolutionGenerator
                 {
                     new()
                     {
-                        { "targets", new List<string> { $"host.docker.internal:{info.HttpsPort}" } },
+                        { "targets", new List<string> { target } },
                     },
                 }
             },
@@ -321,7 +337,7 @@ public class SolutionGenerator
             return false;
         }
 
-        string solutionFile = Path.Combine(_configurationService.GetBasePath(), $"{config.ProjectName}.sln");
+        string solutionFile = Path.Combine(_configurationService.GetBasePath(), $"{config.SolutionName}.sln");
         
         // Download libraries
         await _gitHubService.DownloadLibraries(librariesFolder);

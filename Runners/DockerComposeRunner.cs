@@ -13,13 +13,7 @@ public class DockerComposeRunner : ComponentRunner
 
     protected override RunState OnExecuted(RunState state)
     {
-        string dockerComposePath = RunType switch
-        {
-            RunType.Local => Path.Combine(ConfigurationService.GetBasePath(), "docker-compose-local.yml"),
-            RunType.Docker => Path.Combine(ConfigurationService.GetBasePath(), "docker-compose.yml"),
-            _ => "",
-        };
-        
+        string dockerComposePath = ConfigurationService.GetDockerComposePath(RunType);
         string command = $"docker-compose -f \"{dockerComposePath}\" up -d";
         RunPowershellCommand(command, false);
 

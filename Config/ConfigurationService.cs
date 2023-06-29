@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
+using Nexus.Extensions;
 using Nexus.Models;
+using Nexus.Runners;
 
 namespace Nexus.Config;
 
@@ -10,21 +12,26 @@ public class ConfigurationService
     private const string ServiceAdded = "Service added";
     private const string ServiceAlreadyExists = "Service already exists";
 
-    // public string GetBasePath() => @"C:\source\dotnet\temp";
-    public string GetBasePath() => Directory.GetCurrentDirectory();
+    public string GetBasePath() => @"C:\source\dotnet\temp";
+    // public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
         return Path.Combine(GetBasePath(), "nexus.config.json");
     }
 
-    public string ApiGatewayOcelotDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Ocelot");
-    public string ApiGatewayAppSettingsFile => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\appsettings.json");
-    public string ApiGatewayConsulDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Consul");
-    public string ApiGatewayCsProjFile => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway\Nexus.ApiGateway.csproj");
-    public string HealthChecksDashboardConsulDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\Consul");
-    public string HealthChecksDashboardAppSettingsFile => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\appsettings.json");
-    public string HealthChecksDashboardCsProjFile => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard\Nexus.HealthChecksDashboard.csproj");
+    public string ApiGatewayDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway");
+    public string ApiGatewayDockerfile => Path.Combine(ApiGatewayDirectory, "Dockerfile");
+    public string ApiGatewayOcelotDirectory => Path.Combine(ApiGatewayDirectory, "Ocelot");
+    public string ApiGatewayAppSettingsFile => Path.Combine(ApiGatewayDirectory, "appsettings.json");
+    public string ApiGatewayConsulDirectory => Path.Combine(ApiGatewayDirectory, "Consul");
+    public string ApiGatewayCsProjFile => Path.Combine(ApiGatewayDirectory, "Nexus.ApiGateway.csproj");
+    public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard");
+    public string HealthChecksDashboardDockerfile => Path.Combine(HealthChecksDashboardDirectory, "Dockerfile");
+    public string HealthChecksDashboardConsulDirectory => Path.Combine(HealthChecksDashboardDirectory, "Consul");
+    public string HealthChecksDashboardAppSettingsFile => Path.Combine(HealthChecksDashboardDirectory, "appsettings.json");
+    public string HealthChecksDashboardCsProjFile => Path.Combine(HealthChecksDashboardDirectory, "Nexus.HealthChecksDashboard.csproj");
+    public string FrontEndAppDirectory => Path.Combine(GetBasePath(), @"frontend-app");
 
     public string GetServiceConsulDirectory(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
@@ -34,6 +41,59 @@ public class ConfigurationService
     
     public string GetServiceCsProjFile(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, $"{projectName}.csproj");
+    
+    public string GetServiceDockerfile(string serviceName, string projectName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, $"Dockerfile");
+
+    public string GetDockerComposePath(RunType runType)
+        => runType switch 
+        {
+            RunType.Local => Path.Combine(GetBasePath(), "docker-compose-local.yml"),
+            RunType.Docker => Path.Combine(GetBasePath(), "docker-compose.yml"),
+            _ => "",
+        };
+
+    public string GetTelemetryEndpoint(RunType runType) => runType switch
+    {
+        RunType.Local => "http://localhost:4317",
+        RunType.Docker => "http://jaeger:4317",
+        _ => "",
+    };
+    
+    public string GetConsulEndpoint(RunType runType) => runType switch
+    {
+        RunType.Local => $"http://{GetConsulHost(runType)}:8500",
+        RunType.Docker => "http://{GetConsulHost(runType)}:8500",
+        _ => "",
+    };
+    
+    public string GetConsulHost(RunType runType) => runType switch
+    {
+        RunType.Local => "localhost",
+        RunType.Docker => "consul-server1",
+        _ => "",
+    };
+    
+    public string GetElasticSearchEndpoint(RunType runType)=> runType switch
+    {
+        RunType.Local => "https://localhost:9200",
+        RunType.Docker => "https://es01:9200",
+        _ => "",
+    };
+
+    public string GetDatabaseHost(RunType runType, string serviceName) => runType switch
+    {
+        RunType.Local => "localhost",
+        RunType.Docker => $"{NameExtensions.GetKebabCasedNameWithoutApi(serviceName)}-db",
+        _ => "",
+    };
+
+    public string GetPrometheusFile(RunType runType) => runType switch
+    {
+        RunType.Local => Path.Combine(GetBasePath(), "prometheus.local.yml"),
+        RunType.Docker => Path.Combine(GetBasePath(), "prometheus.docker.yml"),
+        _ => "",
+    };
     
     public NexusSolutionConfiguration? ReadConfiguration()
     {
@@ -110,7 +170,6 @@ public class ConfigurationService
 
     public string EnvironmentFile => Path.Combine(GetBasePath(), ".env");
     public string DockerComposeLocalFile => Path.Combine(GetBasePath(), "docker-compose-local.yml");
-    public string PrometheusLocalFile => Path.Combine(GetBasePath(), "prometheus-local.yml");
 
     public int GetNewServicePort()
     {

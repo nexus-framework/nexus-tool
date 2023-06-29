@@ -19,7 +19,8 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.TelemetrySettings.Endpoint = "http://localhost:4317";
+        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
+        appConfig.TelemetrySettings.Endpoint = ConfigurationService.GetTelemetryEndpoint(RunType);
     }
 
     protected override void UpdateAppConfig(RunState state)
@@ -74,7 +75,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
             return;
         }
 
-        appSettings.ConsulKV.Url = "http://localhost:8500";
+        appSettings.ConsulKV.Url = ConfigurationService.GetConsulEndpoint(RunType);
         appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
@@ -116,7 +117,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
             return;
         }
 
-        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = "localhost";
+        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = ConfigurationService.GetConsulHost(RunType);
         ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Token =
             state.ServiceTokens[Configuration.ServiceName];
 

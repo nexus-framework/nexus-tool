@@ -11,9 +11,9 @@ public class Program
 {
     public static int Main(string[] args)
     {
-        return Parser.Default.ParseArguments<AddOptions, InitOptions, RunOptions, EjectOptions>(args)
+        return Parser.Default.ParseArguments<AddServiceOptions, InitOptions, RunOptions, EjectOptions>(args)
             .MapResult(
-                (AddOptions opts) => AddAndReturnExitCode(opts),
+                (AddServiceOptions opts) => AddServiceAndReturnExitCode(opts),
                 (InitOptions opts) => InitAndReturnExitCode(opts),
                 (RunOptions opts) => RunAndReturnExitCode(opts),
                 (EjectOptions opts) => Eject(opts),
@@ -39,14 +39,10 @@ public class Program
         };
     }
 
-    static int AddAndReturnExitCode(AddOptions addOptions)
+    static int AddServiceAndReturnExitCode(AddServiceOptions addServiceOptions)
     {
         SolutionGenerator solutionGenerator = new ();
-        return addOptions.AddType.Trim().ToLower() switch
-        {
-            "service" => solutionGenerator.AddService(addOptions.Name).Result ? 0 : 1,
-            _ => 1,
-        };
+        return solutionGenerator.AddService(addServiceOptions.Name).Result ? 0 : 1;
     }
     
     static int InitAndReturnExitCode(InitOptions options)

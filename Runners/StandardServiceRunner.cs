@@ -18,7 +18,9 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
     protected override void UpdateAppConfig(RunState state)
     {
         Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
+        string appConfigPath = Path.Combine(
+            ConfigurationService.GetBasePath(),
+            ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -36,7 +38,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
             return;
         }
 
-        ModifyAppConfig(appConfig, state);
+        ModifyAppConfig(appConfig, state, Configuration.ServiceName);
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(appConfigPath, updatedAppConfigJson);
@@ -47,11 +49,11 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
-    private void ModifyAppConfig(dynamic appConfig, RunState state)
+    private void ModifyAppConfig(dynamic appConfig, RunState state, string serviceName)
     {
-        appConfig.SerilogSettings.ElasticSearchSettings.Uri = "https://localhost:9200";
-        appConfig.Postgres.Client.Host = "localhost";
+        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
+        appConfig.Postgres.Client.Host = ConfigurationService.GetDatabaseHost(RunType, serviceName);
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.TelemetrySettings.Endpoint = "http://localhost:4317";
+        appConfig.TelemetrySettings.Endpoint = ConfigurationService.GetTelemetryEndpoint(RunType);
     }
 }

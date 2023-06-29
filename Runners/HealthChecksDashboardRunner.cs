@@ -45,7 +45,7 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed upated config for {Configuration.ServiceName} to Consul KV");
+        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
     protected override void UpdateAppSettings(RunState state)
@@ -67,7 +67,7 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
             return;
         }
 
-        appSettings.ConsulKV.Url = "http://localhost:8500";
+        appSettings.ConsulKV.Url = ConfigurationService.GetConsulEndpoint(RunType);
         appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
@@ -94,24 +94,6 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.SerilogSettings.ElasticSearchSettings.Uri = "https://localhost:9200";
-
-        List<NexusServiceConfiguration>? services = ConfigurationService.ReadConfiguration()?.Services;
-
-        if (services == null || appConfig.HealthCheck.Clients == null)
-        {
-            return;
-        }
-
-        foreach (NexusServiceConfiguration service in services!)
-        {
-            foreach (dynamic? client in appConfig.HealthCheck.Clients)
-            {
-                if (client.ServiceName == service.ServiceName)
-                {
-                    client.Url = $"https://localhost:{service.Port}/actuator/health";
-                }
-            }
-        }
+        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
     }
 }
