@@ -12,8 +12,8 @@ public class ConfigurationService
     private const string ServiceAdded = "Service added";
     private const string ServiceAlreadyExists = "Service already exists";
 
-    public string GetBasePath() => @"C:\source\dotnet\temp";
-    // public string GetBasePath() => Directory.GetCurrentDirectory();
+    // public string GetBasePath() => @"C:\source\dotnet\temp";
+    public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
