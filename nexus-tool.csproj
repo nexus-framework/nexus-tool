@@ -10,8 +10,8 @@
     
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>nexus</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>0.8.2.0</Version>
+    <OutputPath>$(SolutionDir)\artifacts\$(Configuration)\</OutputPath>
+    <Version>0.8.3.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/afroze9/nexus-tool</PackageProjectUrl>
