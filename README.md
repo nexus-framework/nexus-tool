@@ -1,27 +1,31 @@
 # Usage
 
 ## Initializing a Solution
-```
-nexus init <solution_name>
+```powershell
+nexus init -n "<solution_name>"
 ```
 
 e.g.
-```
-nexus init HelloWorld
+```powershell
+nexus init -n "HelloWorld"
 ```
 
 ## Adding a service
-```
-nexus add service <service_name>
+```powershell
+nexus add-service -n "<service_name>"
 ```
 
 e.g.
-```
-nexus add service people
+```powershell
+nexus add-service "people"
 ```
 
 ## Running locally
-```
+```powershell
 nexus run local
 ```
 
+## Running in Docker
+```powershell
+nexus run docker
+```
