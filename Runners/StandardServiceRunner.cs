@@ -1,3 +1,4 @@
+using System.Text;
 using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Services;
@@ -41,7 +42,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         ModifyAppConfig(appConfig, state, Configuration.ServiceName);
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
-        File.WriteAllText(appConfigPath, updatedAppConfigJson);
+        File.WriteAllText(appConfigPath, updatedAppConfigJson, Encoding.UTF8);
         Console.WriteLine($"Updated app-config for {Configuration.ServiceName}");
 
         // Create KV

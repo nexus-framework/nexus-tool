@@ -1,3 +1,4 @@
+using System.Text;
 using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Models;
@@ -47,7 +48,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         ModifyAppConfig(appConfig, state);
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
-        File.WriteAllText(appConfigPath, updatedAppConfigJson);
+        File.WriteAllText(appConfigPath, updatedAppConfigJson, Encoding.UTF8);
         Console.WriteLine($"Updated app-config for {Configuration.ServiceName}");
 
         // Create KV

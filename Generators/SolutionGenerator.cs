@@ -197,7 +197,7 @@ public class SolutionGenerator
         string target = runType switch
         {
             RunType.Local => $"host.docker.internal:{info.HttpsPort}",
-            RunType.Docker => info.ServiceNameKebabCase,
+            RunType.Docker => info.ServiceNameKebabCaseAndApi,
             _ => "",
         };
 

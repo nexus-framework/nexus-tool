@@ -115,6 +115,7 @@ public static class ConsoleUtilities
         servicesTable.Config = TableConfig.Unicode();
 
         servicesTable.AddRow("Consul", "http://localhost:8500");
+        servicesTable.AddRow("Frontend App", "http://localhost:3000");
         servicesTable.AddRow("Jaeger", "http://localhost:16686");
         servicesTable.AddRow("Kibana", "http://localhost:5601");
         servicesTable.AddRow("Prometheus", "http://localhost:9090");
