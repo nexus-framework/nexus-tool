@@ -103,7 +103,8 @@ public class SolutionGenerator
         // Add DB
         // Add networks
         Console.WriteLine("Updating docker-compose");
-        UpdateDockerComposeLocalYaml(info);
+        UpdateDockerComposeYaml(info, RunType.Local);
+        UpdateDockerComposeYaml(info, RunType.Docker);
 
         // Update prometheus yml
         Console.WriteLine("Updating prometheus config");
@@ -166,11 +167,12 @@ public class SolutionGenerator
 
         StringBuilder sb = new ();
         string connectionString = $"User ID=developer;Password=dev123;Host={info.DbHost};Port={info.DbPort};Database={info.DbName}";
+        sb.AppendLine();
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_TOKEN={info.ServiceToken}");
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_CERT_PASSWORD={info.CertificatePassword}");
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_PORT_INTERNAL={info.HttpPort}");
         sb.AppendLine($"{info.ServiceNameSnakeCaseAndApi.ToUpperInvariant()}_PORT_EXTERNAL={info.HttpsPort}");
-        sb.AppendLine($"{info.ServiceNameSnakeCase.ToUpperInvariant()}_DB_CONNECTION_STRING={connectionString}");
+        sb.AppendLine($"{info.ServiceNameSnakeCase.ToUpperInvariant()}_DB_CONNECTION_STRING=\"{connectionString}\"");
         sb.AppendLine($"{info.ServiceNameSnakeCase.ToUpperInvariant()}_DB_PORT={info.DbPort}");
 
         string newVars = sb.ToString();
@@ -227,9 +229,9 @@ public class SolutionGenerator
         File.WriteAllText(ymlFilePath, updatedYaml);
     }
 
-    private void UpdateDockerComposeLocalYaml(ServiceInitializationInfo info)
+    private void UpdateDockerComposeYaml(ServiceInitializationInfo info, RunType runType)
     {
-        string ymlFilePath = _configurationService.DockerComposeLocalFile;
+        string ymlFilePath = _configurationService.GetDockerComposePath(runType);
 
         if (!File.Exists(ymlFilePath))
         {
@@ -255,11 +257,51 @@ public class SolutionGenerator
     networks:
       - {info.DbHost}";
 
+        if (runType == RunType.Docker)
+        {
+            string apiService = @$"
+  {info.ServiceNameKebabCaseAndApi}:
+    image: {info.SolutionNameSnakeCase}-{info.ServiceNameKebabCaseAndApi}:latest
+    depends_on:
+      - {info.DbHost}
+    restart: always
+    deploy:
+      replicas: 2
+    expose:
+      - ${{{info.ServiceNameSnakeCaseAndApi.ToUpper()}_PORT_EXTERNAL}}
+    environment:
+      - ConsulKV:Url=http://consul-server1:8500
+      - ConsulKV:Token=${{{info.ServiceNameSnakeCaseAndApi.ToUpper()}_TOKEN}}
+      - Consul:Host=consul-server1
+      - GlobalConfiguration:BaseUrl=http://localhost:${{{info.ServiceNameSnakeCaseAndApi.ToUpper()}_PORT_INTERNAL}}
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_HTTPS_PORT=443
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${{{info.ServiceNameSnakeCaseAndApi.ToUpper()}_CERT_PASSWORD}}
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ConnectionStrings:Default=${{{info.DbHost.ToSnakeCase().ToUpper()}_CONNECTION_STRING}}
+    volumes:
+      - .\devcerts:/https/
+    networks:
+      - econsul
+      - {info.ServiceNameKebabCaseAndApi}
+      - {info.DbHost}
+      - logs
+      - tracing
+      - api-gateway
+";
+
+            serviceToAdd = @$"{serviceToAdd}
+{apiService}
+";
+        }
+
         string volumeToAdd = $@"##VOLUMES_START##
   {info.DbHost}:
     driver: local";
 
         string networkToAdd = $@"##NETWORKS_START##
+  {info.ServiceNameKebabCaseAndApi}:
+    driver: bridge
   {info.DbHost}:
     driver: bridge";
 

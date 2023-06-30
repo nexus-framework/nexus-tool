@@ -22,7 +22,7 @@ public class ServiceInitializationInfo
     }
     
     public string ServiceToken { get; set; } = string.Empty;
-    public string CertificatePassword { get; set; } = string.Empty;
+    public string CertificatePassword { get; set; } = "dev123";
     public int HttpPort { get; set; }
     public int HttpsPort { get; set; }
     public string DbHost => $"{ServiceNameKebabCase}-db";
