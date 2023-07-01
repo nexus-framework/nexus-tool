@@ -4,9 +4,9 @@ namespace Nexus.Services;
 
 public class GitHubService
 {
-    private const string ServiceTemplateUrl = @"https://codeload.github.com/afroze9/nexus-template/zip/refs/heads/master";
-    private const string SolutionTemplateUrl = @"https://codeload.github.com/afroze9/nexus/zip/refs/heads/master";
-    private const string LibrariesUrl = @"https://codeload.github.com/afroze9/nexus-libraries/zip/refs/heads/master";
+    private const string ServiceTemplateUrl = @"https://codeload.github.com/nexus-framework/nexus-template/zip/refs/heads/master";
+    private const string SolutionTemplateUrl = @"https://codeload.github.com/nexus-framework/nexus/zip/refs/heads/master";
+    private const string LibrariesUrl = @"https://codeload.github.com/nexus-framework/nexus-libraries/zip/refs/heads/master";
     
     public async Task DownloadServiceTemplate(string destPath)
     {
