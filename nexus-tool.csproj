@@ -11,13 +11,15 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>nexus</ToolCommandName>
     <OutputPath>$(SolutionDir)\artifacts\$(Configuration)\</OutputPath>
-    <Version>0.8.4.0</Version>
+    <Version>0.8.5.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/afroze9/nexus-tool</PackageProjectUrl>
     <RepositoryUrl>https://github.com/afroze9/nexus-tool.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Authors>afroze9</Authors>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>nexus;tool;bootstrapper</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +33,7 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="LICENSE.txt" Pack="true" PackagePath="\" />
+    <None Include="assets/icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

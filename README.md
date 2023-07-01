@@ -29,3 +29,6 @@ nexus run local
 ```powershell
 nexus run docker
 ```
+
+## Credits
+<a href="https://www.flaticon.com/free-icons/machine-learning" title="machine learning icons">Machine learning icons created by Becris - Flaticon</a>
