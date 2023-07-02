@@ -7,12 +7,7 @@ namespace Nexus.Config;
 
 public class ConfigurationService
 {
-    private const string ConfigInitiated = "Nexus initiated";
-    private const string ConfigAlreadyInitiated = "Nexus already initiated";
-    private const string ServiceAdded = "Service added";
-    private const string ServiceAlreadyExists = "Service already exists";
-
-    // public string GetBasePath() => @"C:\source\dotnet\temp";
+    //public string GetBasePath() => @"C:\source\dotnet\temp";
     public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
@@ -150,7 +145,7 @@ public class ConfigurationService
         });
 
         WriteConfiguration(config);
-        Console.WriteLine(ServiceAdded);
+        Console.WriteLine("Service added");
         return true;
     }
 
@@ -165,7 +160,7 @@ public class ConfigurationService
 
         if (config.Services.Any(x => x.ServiceName == serviceName))
         {
-            Console.WriteLine(ServiceAlreadyExists);
+            Console.WriteLine("Service already exists");
             return true;
         }
 

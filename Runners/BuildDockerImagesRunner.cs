@@ -37,7 +37,7 @@ public class BuildDockerImagesRunner : ComponentRunner
         // Build services
         foreach (NexusServiceConfiguration service in config.Services)
         {
-            var serviceName = $"{config.SolutionName}-{service.ServiceName}";
+            string serviceName = $"{config.SolutionName}-{service.ServiceName}";
             command = GetDockerBuildCommand(serviceName, version, config.DockerRepository,
                 ConfigurationService.GetServiceDockerfile(service.ServiceName, service.ProjectName),
                 ConfigurationService.GetBasePath());
@@ -45,6 +45,8 @@ public class BuildDockerImagesRunner : ComponentRunner
             RunDockerCommand(command, captureOutput: false);
         }
         
+        Console.WriteLine($"Built docker images for version {version}");
+
         // Save version in state
         state.DockerImageVersion = version;
         state.LastStepStatus = StepStatus.Success;

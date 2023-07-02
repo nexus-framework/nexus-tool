@@ -65,6 +65,26 @@ static void CleanDocker()
     cleanupService.Cleanup(RunType.Docker);
 }
 
+static void DockerBuild()
+{
+    ConfigurationService configurationService = new ();
+    BuildDockerImagesRunner runner = new (configurationService, RunType.Docker);
+    RunState state = new ("", "");
+    runner.Start(state);
+}
+
+static void DockerPublish()
+{
+    ConfigurationService configurationService = new ();
+    PublishDockerImagesRunner publishDockerImagesRunner = new PublishDockerImagesRunner(configurationService, RunType.Docker);
+    BuildDockerImagesRunner buildDockerImagesRunner = new (configurationService, RunType.Docker);
+
+    buildDockerImagesRunner.AddNextRunner(publishDockerImagesRunner);
+    
+    RunState state = new ("", "");
+    buildDockerImagesRunner.Start(state);
+}
+
 app.AddCommand("init", InitSolution)
     .WithDescription("Create a new Nexus Solution");
 
@@ -94,5 +114,15 @@ app.AddSubCommand("clean", options =>
             .WithDescription("Clean up the docker dev environment");
     })
     .WithDescription("Clean up the dev environment");
+
+app.AddSubCommand("docker", options =>
+    {
+        options.AddCommand("build", DockerBuild)
+            .WithDescription("Build docker images for services");
+
+        options.AddCommand("publish", DockerPublish)
+            .WithDescription("Publish docker images for services");
+    })
+    .WithDescription("Docker specific commands");
 
 app.Run();

@@ -44,11 +44,11 @@ public class SolutionGenerator
         _configurationService.WriteConfiguration(config);
         
         // Replace names in docker-compose
-        var dockerComposePath = _configurationService.GetDockerComposePath(RunType.Docker);
+        string dockerComposePath = _configurationService.GetDockerComposePath(RunType.Docker);
 
         if (File.Exists(dockerComposePath))
         {
-            var lines = await File.ReadAllLinesAsync(dockerComposePath);
+            string[] lines = await File.ReadAllLinesAsync(dockerComposePath);
             for (int i = 0; i < lines.Length; i++)
             {
                 if (Regex.IsMatch(lines[i], @"image:\s+nexus.*:latest$"))
