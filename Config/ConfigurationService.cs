@@ -33,6 +33,10 @@ public class ConfigurationService
     public string HealthChecksDashboardCsProjFile => Path.Combine(HealthChecksDashboardDirectory, "Nexus.HealthChecksDashboard.csproj");
     public string FrontEndAppDirectory => Path.Combine(GetBasePath(), @"frontend-app");
 
+    public string DiscoveryServerConfigFolder => Path.Combine(GetBasePath(), @"discovery-server\docker\");
+    public string DiscoveryServerDockerCompose => Path.Combine(DiscoveryServerConfigFolder, "docker-compose.yml");
+    public string DiscoveryServerAcl => Path.Combine(DiscoveryServerConfigFolder, "consul-acl.json");
+
     public string GetServiceConsulDirectory(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
 
@@ -169,7 +173,6 @@ public class ConfigurationService
     }
 
     public string EnvironmentFile => Path.Combine(GetBasePath(), ".env");
-    public string DockerComposeLocalFile => Path.Combine(GetBasePath(), "docker-compose-local.yml");
 
     public int GetNewServicePort()
     {

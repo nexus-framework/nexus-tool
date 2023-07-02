@@ -1,65 +1,98 @@
-﻿using CommandLine;
-using Nexus.CliOptions;
+﻿using Cocona;
+using Cocona.Builder;
 using Nexus.Config;
-using Nexus.Generators;
 using Nexus.Runners;
 using Nexus.Services;
 
-namespace Nexus;
+CoconaAppBuilder builder = CoconaApp.CreateBuilder();
+CoconaApp app = builder.Build();
 
-public class Program
+static async Task InitSolution(
+    [Option('n', Description = "Solution name")] string name,
+    [Option('l', Description = "Include source code for libraries")] bool includeLibrarySource)
 {
-    public static int Main(string[] args)
+    SolutionGenerator solutionGenerator = new ();
+    await solutionGenerator.InitializeSolution(name);
+    
+    if (includeLibrarySource)
     {
-        return Parser.Default.ParseArguments<AddServiceOptions, InitOptions, RunOptions, EjectOptions>(args)
-            .MapResult(
-                (AddServiceOptions opts) => AddServiceAndReturnExitCode(opts),
-                (InitOptions opts) => InitAndReturnExitCode(opts),
-                (RunOptions opts) => RunAndReturnExitCode(opts),
-                (EjectOptions opts) => Eject(opts),
-                errs => 1);
-    }
-
-    private static int Eject(EjectOptions opts)
-    {
-        SolutionGenerator solutionGenerator = new ();
-        return solutionGenerator.Eject().Result ? 0 : 1;
-    }
-
-    private static int RunAndReturnExitCode(RunOptions runOptions)
-    {
-        ConfigurationService configurationService = new ();
-        ConsulApiService consulApiService = new ();
-        NexusRunner runner = new (configurationService, consulApiService);
-        return runOptions.Environment.Trim().ToLower() switch
-        {
-            "local" => runner.RunLocal(),
-            "docker" => runner.RunDocker(),
-            _ => 1,
-        };
-    }
-
-    static int AddServiceAndReturnExitCode(AddServiceOptions addServiceOptions)
-    {
-        SolutionGenerator solutionGenerator = new ();
-        return solutionGenerator.AddService(addServiceOptions.Name).Result ? 0 : 1;
+        await solutionGenerator.Eject();
     }
     
-    static int InitAndReturnExitCode(InitOptions options)
-    {
-        SolutionGenerator solutionGenerator = new ();
-        bool initResult = solutionGenerator.InitializeSolution(options.Name).Result;
-
-        if (!initResult)
-        {
-            return 1;
-        }
-        if (options.IncludeLibrarySource)
-        {
-            return solutionGenerator.Eject().Result ? 0 : 1;
-        }
-        
-        Console.WriteLine("Done");
-        return 0;
-    }
+    Console.WriteLine("Done");
 }
+
+static async Task Eject()
+{
+    SolutionGenerator solutionGenerator = new ();
+    await solutionGenerator.Eject();
+}
+
+static async Task AddService(
+    [Option(shortName: 'n', Description = "Service name", ValueName = "name")] string name)
+{
+    SolutionGenerator solutionGenerator = new ();
+    await solutionGenerator.AddService(name);
+}
+
+static void RunLocal()
+{
+    ConfigurationService configurationService = new ();
+    ConsulApiService consulApiService = new ();
+    NexusRunner runner = new (configurationService, consulApiService);
+    runner.RunLocal();
+}
+
+static void RunDocker()
+{
+    ConfigurationService configurationService = new ();
+    ConsulApiService consulApiService = new ();
+    NexusRunner runner = new (configurationService, consulApiService);
+    runner.RunDocker();
+}
+
+static void CleanLocal()
+{
+    ConfigurationService configurationService = new ();
+    CleanupService cleanupService = new (configurationService);
+    cleanupService.Cleanup(RunType.Local);
+}
+
+static void CleanDocker()
+{
+    ConfigurationService configurationService = new ();
+    CleanupService cleanupService = new (configurationService);
+    cleanupService.Cleanup(RunType.Docker);
+}
+
+app.AddCommand("init", InitSolution)
+    .WithDescription("Create a new Nexus Solution");
+
+app.AddCommand("eject", Eject)
+    .WithDescription("Replace library references with source code");
+
+app.AddSubCommand("add", x =>
+    {
+        x.AddCommand("service", AddService)
+            .WithDescription("Add a new service");
+    })
+    .WithDescription("Add components to the solution");
+
+app.AddSubCommand("run", x =>
+    {
+        x.AddCommand("local", RunLocal).WithDescription("Run local development environment");
+        x.AddCommand("docker", RunDocker).WithDescription("Run docker development environment");
+    })
+    .WithDescription("Run development environment");
+
+app.AddSubCommand("clean", options =>
+    {
+        options.AddCommand("local", CleanLocal)
+            .WithDescription("Clean up the local dev environment");
+        
+        options.AddCommand("docker", CleanDocker)
+            .WithDescription("Clean up the docker dev environment");
+    })
+    .WithDescription("Clean up the dev environment");
+
+app.Run();

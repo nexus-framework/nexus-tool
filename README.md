@@ -12,12 +12,12 @@ nexus init -n "HelloWorld"
 
 ## Adding a service
 ```powershell
-nexus add-service -n "<service_name>"
+nexus add service -n "<service_name>"
 ```
 
 e.g.
 ```powershell
-nexus add-service "people"
+nexus add service "people"
 ```
 
 ## Running locally
@@ -28,6 +28,12 @@ nexus run local
 ## Running in Docker
 ```powershell
 nexus run docker
+```
+
+## Cleaning up
+```powershell
+nexus clean local
+nexus clean docker
 ```
 
 ## Credits

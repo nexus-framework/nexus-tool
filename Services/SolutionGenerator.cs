@@ -8,12 +8,11 @@ using Nexus.Config;
 using Nexus.Extensions;
 using Nexus.Models;
 using Nexus.Runners;
-using Nexus.Services;
 using YamlDotNet.Serialization;
 using static Nexus.Extensions.ConsoleUtilities;
 using static Nexus.Extensions.DirectoryExtensions;
 
-namespace Nexus.Generators;
+namespace Nexus.Services;
 
 public class SolutionGenerator
 {

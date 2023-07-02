@@ -14,17 +14,17 @@ public class DiscoveryServerRunner : ComponentRunner
     
     protected override RunState OnExecuted(RunState state)
     {
-        string configFolder = Path.Combine(ConfigurationService.GetBasePath(), @"discovery-server\docker\");
+        string configFolder = ConfigurationService.DiscoveryServerConfigFolder;
         string[] files = Directory.GetFiles(configFolder, "server*.json");
         
         // Replace subnet ip
         ReplaceSubnetIpInConsulServerConfig(files, state.SubnetIp);
 
         // Docker compose up
-        string dockerComposeYmlPath = Path.Combine(configFolder, "docker-compose.yml");
+        string dockerComposeYmlPath = ConfigurationService.DiscoveryServerDockerCompose;
         RunPowershellCommand($"docker-compose -f \"{dockerComposeYmlPath}\" up --detach");
 
-        string consulAclPath = Path.Combine(configFolder, "consul-acl.json");
+        string consulAclPath = ConfigurationService.DiscoveryServerAcl;
 
         // Copy ACL to servers
         for (int i = 1; i <= files.Length; i++)
@@ -62,15 +62,22 @@ public class DiscoveryServerRunner : ComponentRunner
         Match match = Regex.Match(bootstrapOutput, @"SecretID:\s+(\S+)");
         state.GlobalToken = match.Success ? match.Groups[1].Value : string.Empty;
         
+        if (string.IsNullOrEmpty(state.GlobalToken))
+        {
+            Console.Error.WriteLine("Unable to Bootstrap Consul ACL");
+            state.LastStepStatus = StepStatus.Failure;
+            return state;
+        }
+        Console.WriteLine($"Discovery Server ACL Bootstrap Done. Token: {state.GlobalToken}");
+        
         // Set agent tokens
         for (int i = 1; i <= files.Length; i++)
         {
+            Console.WriteLine($"Setting token for consul-server{i}");
             RunDockerCommand(
                 $"exec -e CONSUL_HTTP_TOKEN=\"{state.GlobalToken}\" consul-server{i} consul acl set-agent-token agent \"{state.GlobalToken}\"");
         }
         
-        Console.WriteLine($"Discovery Server ACL Bootstrap Done. Token: {state.GlobalToken}");
-
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
