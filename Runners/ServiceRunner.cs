@@ -41,7 +41,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
         
         // Create token
         Console.WriteLine($"Creating token for {Configuration.ServiceName}");
-        string? serviceToken = CreateToken(state, policy.Name);
+        string serviceToken = CreateToken(state, policy.Name);
 
         if (string.IsNullOrEmpty(serviceToken))
         {
@@ -115,7 +115,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed upated config for {Configuration.ServiceName} to Consul KV");
+        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
     
     protected virtual void UpdateAppSettings(RunState state)
@@ -136,8 +136,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
             Console.Error.WriteLine($"Unable to read file: appsettings.json for {Configuration.ServiceName}");
             return;
         }
-
-        appSettings.ConsulKV.Url = "http://localhost:8500";
+        
         appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
@@ -145,7 +144,4 @@ public abstract class ServiceRunner<T> : ComponentRunner
         
         Console.WriteLine($"Updated appsettings.json for {Configuration.ServiceName}");
     }
-
-
-    //protected abstract void ModifyAppConfig(dynamic appConfig, RunState state);
 }

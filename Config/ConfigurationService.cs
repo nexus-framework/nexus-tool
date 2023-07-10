@@ -62,7 +62,7 @@ public class ConfigurationService
     public string GetConsulEndpoint(RunType runType) => runType switch
     {
         RunType.Local => $"http://{GetConsulHost(runType)}:8500",
-        RunType.Docker => "http://{GetConsulHost(runType)}:8500",
+        RunType.Docker => $"http://{GetConsulHost(runType)}:8500",
         _ => "",
     };
     
@@ -168,6 +168,8 @@ public class ConfigurationService
     }
 
     public string EnvironmentFile => Path.Combine(GetBasePath(), ".env");
+
+    public string GlobalAppsettingsFile => Path.Combine(GetBasePath(), "appsettings.Global.json");
 
     public int GetNewServicePort()
     {
