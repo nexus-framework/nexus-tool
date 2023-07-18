@@ -52,10 +52,8 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
 
     private void ModifyAppConfig(dynamic appConfig, RunState state, string serviceName)
     {
-        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
         appConfig.Postgres.Client.Host = ConfigurationService.GetDatabaseHost(RunType, serviceName);
         appConfig.Postgres.Client.Port = Configuration.DbPort ?? 5432;
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.TelemetrySettings.Endpoint = ConfigurationService.GetTelemetryEndpoint(RunType);
     }
 }

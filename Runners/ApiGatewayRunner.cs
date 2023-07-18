@@ -20,8 +20,6 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
-        appConfig.TelemetrySettings.Endpoint = ConfigurationService.GetTelemetryEndpoint(RunType);
     }
 
     protected override void UpdateAppConfig(RunState state)
@@ -53,7 +51,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed upated config for {Configuration.ServiceName} to Consul KV");
+        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
     protected override void UpdateAppSettings(RunState state)
@@ -76,7 +74,6 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
             return;
         }
 
-        appSettings.ConsulKV.Url = ConfigurationService.GetConsulEndpoint(RunType);
         appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);

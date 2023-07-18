@@ -68,7 +68,6 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
             return;
         }
 
-        appSettings.ConsulKV.Url = ConfigurationService.GetConsulEndpoint(RunType);
         appSettings.ConsulKV.Token = state.ServiceTokens[Configuration.ServiceName];
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
@@ -95,6 +94,5 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
-        appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
     }
 }

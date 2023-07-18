@@ -50,10 +50,12 @@ internal class NexusRunner
             runners[i].AddNextRunner(runners[i + 1]);
         }
 
+        ConsulGlobalConfigRunner consulGlobalConfigRunner = new (_configurationService, _consulApiService, runType);
         EnvironmentUpdateRunner environmentUpdateRunner = new (_configurationService, runType);
         DockerComposeRunner dockerComposeRunner = new (_configurationService, runType);
         
         runners.Last()
+            .AddNextRunner(consulGlobalConfigRunner)
             .AddNextRunner(environmentUpdateRunner)
             .AddNextRunner(dockerComposeRunner);
         
@@ -111,10 +113,12 @@ internal class NexusRunner
             runners[i].AddNextRunner(runners[i + 1]);
         }
 
+        ConsulGlobalConfigRunner consulGlobalConfigRunner = new (_configurationService, _consulApiService, runType);
         EnvironmentUpdateRunner environmentUpdateRunner = new (_configurationService, runType);      
         DockerComposeRunner dockerComposeRunner = new (_configurationService, runType);
 
         runners.Last()
+            .AddNextRunner(consulGlobalConfigRunner)
             .AddNextRunner(environmentUpdateRunner)
             .AddNextRunner(dockerComposeRunner);
         

@@ -76,7 +76,7 @@ static void DockerBuild()
 static void DockerPublish()
 {
     ConfigurationService configurationService = new ();
-    PublishDockerImagesRunner publishDockerImagesRunner = new PublishDockerImagesRunner(configurationService, RunType.Docker);
+    PublishDockerImagesRunner publishDockerImagesRunner = new (configurationService, RunType.Docker);
     BuildDockerImagesRunner buildDockerImagesRunner = new (configurationService, RunType.Docker);
 
     buildDockerImagesRunner.AddNextRunner(publishDockerImagesRunner);

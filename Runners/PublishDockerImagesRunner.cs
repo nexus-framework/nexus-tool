@@ -5,7 +5,7 @@ namespace Nexus.Runners;
 
 public class PublishDockerImagesRunner : ComponentRunner
 {
-    private readonly List<string> _defaultServices = new List<string>()
+    private readonly List<string> _defaultServices = new ()
     {
         "frontend-app",
         "api-gateway",

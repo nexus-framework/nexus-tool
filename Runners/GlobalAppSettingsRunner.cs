@@ -12,7 +12,7 @@ public class GlobalAppSettingsRunner : ComponentRunner
 
     protected override RunState OnExecuted(RunState state)
     {
-        string appSettingsPath = ConfigurationService.GlobalAppsettingsFile;
+        string appSettingsPath = ConfigurationService.GlobalAppSettingsFile;
 
         if (!File.Exists(appSettingsPath))
         {

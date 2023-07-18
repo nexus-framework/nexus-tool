@@ -169,7 +169,9 @@ public class ConfigurationService
 
     public string EnvironmentFile => Path.Combine(GetBasePath(), ".env");
 
-    public string GlobalAppsettingsFile => Path.Combine(GetBasePath(), "appsettings.Global.json");
+    public string GlobalAppSettingsFile => Path.Combine(GetBasePath(), "appsettings.Global.json");
+    
+    public string GlobalConsulFile => Path.Combine(GetBasePath(), "consul.global.json");
 
     public int GetNewServicePort()
     {
