@@ -62,7 +62,6 @@ public class DiscoveryServerRunner : ComponentRunner
                 if (IPAddress.TryParse(containerIp, out _))
                 {
                     Console.WriteLine($"{containerName} is up");
-                    Thread.Sleep(1500);
                     break;
                 }
                 
@@ -71,6 +70,22 @@ public class DiscoveryServerRunner : ComponentRunner
             }
         }
         
+        // Check if anonymous ACL has been created
+        string[] containerNames = Enumerable
+            .Range(1, files.Length)
+            .Select(x => $"consul-server{x}")
+            .ToArray();
+        for (int logRetry = 0; logRetry < 5; logRetry++)
+        {
+            Console.WriteLine($"Waiting for global-management policy to be created (try: {logRetry + 1})...");
+            string logs = string.Join('\n', containerNames.Select(x => RunDockerCommand($"logs {x}")));
+            if (logs.Contains("Created ACL anonymous token from configuration"))
+            {
+                break;
+            }
+            Thread.Sleep(2500);
+        }
+
         // Bootstrap acl
         string bootstrapOutput = RunDockerCommand("exec consul-server1 consul acl bootstrap");
         Match match = Regex.Match(bootstrapOutput, @"SecretID:\s+(\S+)");
