@@ -25,13 +25,13 @@ public class SolutionGenerator
         _gitHubService = new GitHubService();
     }
 
-    public async Task<bool> InitializeSolution(string rawName)
+    public async Task<bool> InitializeSolution(string rawName, CancellationToken cancellationToken = default)
     {
         string solutionName = NameExtensions.GetKebabCasedNameWithoutApi(rawName);
         
         // Download solution
         string solutionDirectory = _configurationService.GetBasePath();
-        await _gitHubService.DownloadSolutionTemplate(solutionName, solutionDirectory);
+        await _gitHubService.DownloadSolutionTemplate(solutionName, solutionDirectory, cancellationToken);
         
         // Replace ProjectName in nexus config
         NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
@@ -48,7 +48,7 @@ public class SolutionGenerator
 
         if (File.Exists(dockerComposePath))
         {
-            string[] lines = await File.ReadAllLinesAsync(dockerComposePath);
+            string[] lines = await File.ReadAllLinesAsync(dockerComposePath, cancellationToken);
             for (int i = 0; i < lines.Length; i++)
             {
                 if (Regex.IsMatch(lines[i], @"image:\s+nexus.*:latest$"))
@@ -57,7 +57,7 @@ public class SolutionGenerator
                 }
             }
             
-            await File.WriteAllLinesAsync(dockerComposePath, lines);
+            await File.WriteAllLinesAsync(dockerComposePath, lines, cancellationToken);
         }
         
         return true;

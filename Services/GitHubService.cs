@@ -74,7 +74,7 @@ public class GitHubService
         }
     }
     
-    public async Task DownloadSolutionTemplate(string solutionName, string solutionDirectory)
+    public async Task DownloadSolutionTemplate(string solutionName, string solutionDirectory, CancellationToken cancellationToken = default)
     {
         // create temp folder
         string? tempFolderPath = Path.Combine(Path.GetTempPath(), "nexus", Guid.NewGuid().ToString());
@@ -93,20 +93,20 @@ public class GitHubService
             Console.WriteLine("Downloading solution template");
             using (HttpClient? client = new ())
             {
-                HttpResponseMessage? response = await client.GetAsync(SolutionTemplateUrl);
+                HttpResponseMessage? response = await client.GetAsync(SolutionTemplateUrl, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     return;
                 }
 
-                await using (Stream? contentStream = await response.Content.ReadAsStreamAsync())
+                await using (Stream? contentStream = await response.Content.ReadAsStreamAsync(cancellationToken))
                 {
                     await using (FileStream? fileStream = new (downloadFilePath, FileMode.Create,
                                      FileAccess.ReadWrite,
                                      FileShare.ReadWrite))
                     {
-                        await contentStream.CopyToAsync(fileStream);
+                        await contentStream.CopyToAsync(fileStream, cancellationToken);
                     }
                 }
             }
