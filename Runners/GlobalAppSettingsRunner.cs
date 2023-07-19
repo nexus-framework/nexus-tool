@@ -41,4 +41,6 @@ public class GlobalAppSettingsRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Global App Settings Updater";
 }

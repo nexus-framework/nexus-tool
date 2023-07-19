@@ -24,4 +24,6 @@ public class DevCertsRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Dev Certificates Creator";
 }

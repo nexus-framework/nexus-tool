@@ -1,8 +1,11 @@
+using System.Drawing;
 using System.Net;
 using System.Text.RegularExpressions;
+using Colorful;
 using Newtonsoft.Json;
 using Nexus.Config;
 using static Nexus.Extensions.ConsoleUtilities;
+using Console = Colorful.Console;
 
 namespace Nexus.Runners;
 
@@ -18,15 +21,18 @@ public class DiscoveryServerRunner : ComponentRunner
         string[] files = Directory.GetFiles(configFolder, "server*.json");
         
         // Replace subnet ip
+        Console.WriteLine("Updating consul server configs");
         ReplaceSubnetIpInConsulServerConfig(files, state.SubnetIp);
 
         // Docker compose up
+        Console.WriteLine("Starting consul server on docker");
         string dockerComposeYmlPath = ConfigurationService.DiscoveryServerDockerCompose;
         RunPowershellCommand($"docker-compose -f \"{dockerComposeYmlPath}\" up --detach");
 
         string consulAclPath = ConfigurationService.DiscoveryServerAcl;
 
         // Copy ACL to servers
+        Console.WriteLine("Copying configs to docker containers");
         for (int i = 1; i <= files.Length; i++)
         {
             RunDockerCommand($"cp \"{consulAclPath}\" consul-server{i}:/consul/config/consul-acl.json");
@@ -36,9 +42,16 @@ public class DiscoveryServerRunner : ComponentRunner
         for (int i = 1; i <= files.Length; i++)
         {
             string containerName = $"consul-server{i}";
+            
+            StyleSheet ss = new StyleSheet(Color.Black);
+            ss.AddStyle(containerName, Color.Cyan);
+            Console.WriteLineStyled($"Restarting consul server: {containerName}", ss);
+
             RunDockerCommand($"container restart {containerName}");
+            
             string containerIp = string.Empty;
             int retries = 0;
+            
             while (containerIp == string.Empty && retries <= 5)
             {
                 Console.WriteLine($"Waiting for {containerName} to be up again (try: {retries+1})...");
@@ -49,6 +62,7 @@ public class DiscoveryServerRunner : ComponentRunner
                 if (IPAddress.TryParse(containerIp, out _))
                 {
                     Console.WriteLine($"{containerName} is up");
+                    Thread.Sleep(1500);
                     break;
                 }
                 
@@ -81,6 +95,8 @@ public class DiscoveryServerRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Discovery Service Runner";
 
     private void ReplaceSubnetIpInConsulServerConfig(string[] files, string subnetIp)
     {

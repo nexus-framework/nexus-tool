@@ -36,4 +36,6 @@ public class InitializeDockerRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Docker Initializer";
 }

@@ -56,4 +56,6 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         appConfig.Postgres.Client.Port = Configuration.DbPort ?? 5432;
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
+
+    protected override string DisplayName => $"{Configuration.ServiceName} runner";
 }

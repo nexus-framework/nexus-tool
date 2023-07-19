@@ -54,6 +54,8 @@ public class BuildDockerImagesRunner : ComponentRunner
         return state;
     }
 
+    protected override string DisplayName => "Docker Images Builder";
+
     private static string GetDockerBuildCommand(string serviceName, string version, string repo, string folderPath)
     {
         return @$"build -t {serviceName}:latest -t {serviceName}:{version} -t ""{repo}/{serviceName}:latest"" -t ""{repo}/{serviceName}:{version}"" ""{folderPath}""";

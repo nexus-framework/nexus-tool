@@ -45,4 +45,6 @@ public class PublishDockerImagesRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Docker Images Publisher";
 }

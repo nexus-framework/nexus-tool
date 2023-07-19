@@ -21,7 +21,7 @@ public class ConsulGlobalConfigRunner : ComponentRunner
     {        
         if(!File.Exists(ConfigurationService.GlobalConsulFile))
         {
-            Console.Error.Write("Unable to add nexus global config to consul");
+            Console.Error.WriteLine("Unable to add nexus global config to consul");
             state.LastStepStatus = StepStatus.Failure;
             return state;
         }
@@ -49,4 +49,6 @@ public class ConsulGlobalConfigRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Consul Global Config Updater";
 }
