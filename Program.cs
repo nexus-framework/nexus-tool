@@ -1,5 +1,7 @@
-﻿using Cocona;
+﻿using System.Drawing;
+using Cocona;
 using Cocona.Builder;
+using Console = Colorful.Console;
 
 namespace Nexus;
 
@@ -7,6 +9,8 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        Console.WriteAscii("NEXUS", Color.FromArgb(246, 148, 137));
+
         CoconaAppBuilder builder = CoconaApp.CreateBuilder();
         CoconaApp app = builder.Build();
 

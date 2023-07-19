@@ -14,6 +14,7 @@ public class EnvironmentUpdateRunner : ComponentRunner
 
     protected override RunState OnExecuted(RunState state)
     {
+        Console.WriteLine("Updating .env file");
         NexusSolutionConfiguration? config = ConfigurationService.ReadConfiguration();
 
         if (config == null)
@@ -49,4 +50,6 @@ public class EnvironmentUpdateRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Environment Updater";
 }

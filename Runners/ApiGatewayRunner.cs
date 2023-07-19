@@ -122,4 +122,6 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         string updatedOcelotConfigJson = JsonConvert.SerializeObject(ocelotConfig, Formatting.Indented);
         File.WriteAllText(ocelotConfigPath, updatedOcelotConfigJson);
     }
+
+    protected override string DisplayName => "Api Gateway Runner";
 }

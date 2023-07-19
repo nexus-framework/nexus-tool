@@ -22,4 +22,6 @@ public class DockerComposeRunner : ComponentRunner
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
+
+    protected override string DisplayName => "Docker Compose Runner";
 }

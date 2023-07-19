@@ -95,4 +95,6 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
+
+    protected override string DisplayName => "Health Checks Dashboard Runner";
 }

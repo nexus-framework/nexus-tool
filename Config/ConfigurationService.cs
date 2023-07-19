@@ -127,6 +127,12 @@ public class ConfigurationService
         return true;
     }
 
+    public bool IsSolutionDirectoryEmpty()
+    {
+        var files = Directory.GetFiles(GetBasePath());
+        return files.Length == 0;
+    }
+
     public bool AddService(ServiceInitializationInfo info)
     {
         NexusSolutionConfiguration? config = ReadConfiguration();

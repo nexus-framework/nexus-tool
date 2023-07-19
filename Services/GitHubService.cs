@@ -47,7 +47,7 @@ public class GitHubService
             Console.WriteLine("Download complete");
 
             // Extract files
-            Console.WriteLine("Extracting solution");
+            Console.WriteLine("Extracting service");
             if (File.Exists(downloadFilePath))
             {
                 if (!Directory.Exists(extractPath))

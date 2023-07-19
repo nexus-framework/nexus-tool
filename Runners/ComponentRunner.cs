@@ -1,5 +1,8 @@
+using System.Drawing;
+using Colorful;
 using Nexus.Config;
 using Nexus.Models;
+using Console = Colorful.Console;
 
 namespace Nexus.Runners;
 
@@ -24,11 +27,30 @@ public abstract class ComponentRunner
     
     public RunState Start(RunState state)
     {
+        StyleSheet ss = new StyleSheet(Color.Black);
+        ss.AddStyle(DisplayName, Color.Cyan);
+        Console.WriteLineStyled($"Starting {DisplayName}", ss);
         RunState updatedState = OnExecuted(state);
-        return Next != null ? Next.Start(updatedState) : updatedState;
+
+        if (state.LastStepStatus == StepStatus.Failure)
+        {
+            ss.UnstyledColor = Color.Red;
+            Console.WriteLineStyled($"{DisplayName} failed. Aborting", ss);
+            return updatedState;
+        }
+
+        if (Next == null)
+        {
+            return updatedState;
+        }
+
+        Console.WriteLine("**************************************************\n\n");
+        return Next.Start(updatedState);
     }
     
     protected abstract RunState OnExecuted(RunState state);
+
+    protected abstract string DisplayName { get; }
 }
 
 public class RunState
