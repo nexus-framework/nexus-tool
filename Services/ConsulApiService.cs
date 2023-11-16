@@ -17,7 +17,7 @@ public class ConsulApiService
         StringContent content = new (policy.Json, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(PolicyApiUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
-        dynamic? jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
+        dynamic? jsonResponse = JsonConvert.DeserializeObject(responseContent);
 
         if (jsonResponse == null)
         {
@@ -85,7 +85,7 @@ public class ConsulApiService
         StringContent content = new (tokenJson, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(TokenApiUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
-        dynamic? jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
+        dynamic? jsonResponse = JsonConvert.DeserializeObject(responseContent);
 
         return jsonResponse?.SecretID ?? string.Empty;
     }
@@ -97,6 +97,6 @@ public class ConsulApiService
         string kvUrl = string.Format(KvApiUrl, serviceName);
         HttpResponseMessage response = client.PutAsync(kvUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
-        dynamic? jsonResponse = Newtonsoft.Json.JsonConvert.DeserializeObject(responseContent);
+        dynamic? jsonResponse = JsonConvert.DeserializeObject(responseContent);
     }
 }

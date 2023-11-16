@@ -84,8 +84,8 @@ public static class ConsoleUtilities
             .AddColumn("Service", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
-                ForegroundColor = Color.Cyan,
-            }, rowsFormat: new CellFormat { ForegroundColor = Color.Cyan })
+                ForegroundColor = Constants.Colors.Info,
+            }, rowsFormat: new CellFormat { ForegroundColor = Constants.Colors.Info })
             .AddColumn("Token", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
@@ -104,8 +104,8 @@ public static class ConsoleUtilities
             .AddColumn("Service", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,
-                ForegroundColor = Color.Cyan,
-            }, rowsFormat: new CellFormat { ForegroundColor = Color.Cyan })
+                ForegroundColor = Constants.Colors.Info,
+            }, rowsFormat: new CellFormat { ForegroundColor = Constants.Colors.Info })
             .AddColumn("Url", headerFormat: new CellFormat
             {
                 Alignment = Alignment.Left,

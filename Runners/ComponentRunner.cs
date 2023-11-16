@@ -1,8 +1,6 @@
-using System.Drawing;
-using Colorful;
 using Nexus.Config;
 using Nexus.Models;
-using Console = Colorful.Console;
+using Pastel;
 
 namespace Nexus.Runners;
 
@@ -27,15 +25,12 @@ public abstract class ComponentRunner
     
     public RunState Start(RunState state)
     {
-        StyleSheet ss = new StyleSheet(Color.Black);
-        ss.AddStyle(DisplayName, Color.Cyan);
-        Console.WriteLineStyled($"Starting {DisplayName}", ss);
+        Console.WriteLine($"{"Starting".Pastel(Constants.Colors.Default)} {DisplayName.Pastel(Constants.Colors.Info)}");
         RunState updatedState = OnExecuted(state);
 
         if (state.LastStepStatus == StepStatus.Failure)
         {
-            ss.UnstyledColor = Color.Red;
-            Console.WriteLineStyled($"{DisplayName} failed. Aborting", ss);
+            Console.WriteLine($"{DisplayName.Pastel(Constants.Colors.Info)}{" failed. Aborting".Pastel(Constants.Colors.Error)}");
             return updatedState;
         }
 

@@ -1,5 +1,6 @@
 using Nexus.Config;
 using Nexus.Services;
+using Pastel;
 using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
@@ -76,7 +77,7 @@ internal class NexusRunner
             return 0;
         }
         
-        Console.WriteLine("There were some errors setting up the development environment");
+        Console.WriteLine("There were some errors setting up the development environment".Pastel(Constants.Colors.Error));
         return 1;
     }
 
@@ -140,7 +141,7 @@ internal class NexusRunner
             return 0;
         }
         
-        Console.WriteLine("There were some errors setting up the development environment");
+        Console.WriteLine("There were some errors setting up the development environment".Pastel(Constants.Colors.Error));
         return 1;
     }
 }

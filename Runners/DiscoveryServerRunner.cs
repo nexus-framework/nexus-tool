@@ -1,11 +1,9 @@
-using System.Drawing;
 using System.Net;
 using System.Text.RegularExpressions;
-using Colorful;
 using Newtonsoft.Json;
 using Nexus.Config;
+using Pastel;
 using static Nexus.Extensions.ConsoleUtilities;
-using Console = Colorful.Console;
 
 namespace Nexus.Runners;
 
@@ -42,11 +40,9 @@ public class DiscoveryServerRunner : ComponentRunner
         for (int i = 1; i <= files.Length; i++)
         {
             string containerName = $"consul-server{i}";
-            
-            StyleSheet ss = new StyleSheet(Color.Black);
-            ss.AddStyle(containerName, Color.Cyan);
-            Console.WriteLineStyled($"Restarting consul server: {containerName}", ss);
 
+            Console.WriteLine($"{"Restarting consul server:".Pastel(Constants.Colors.Default)} {containerName.Pastel(Constants.Colors.Info)}");
+            
             RunDockerCommand($"container restart {containerName}");
             
             string containerIp = string.Empty;

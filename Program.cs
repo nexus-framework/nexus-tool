@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using Cocona;
 using Cocona.Builder;
-using Console = Colorful.Console;
+using Pastel;
 
 namespace Nexus;
 
@@ -9,7 +9,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        Console.WriteAscii("NEXUS", Color.FromArgb(246, 148, 137));
+        Console.WriteLine(Constants.NexusLogo.Pastel(Constants.Colors.Info));
 
         CoconaAppBuilder builder = CoconaApp.CreateBuilder();
         CoconaApp app = builder.Build();

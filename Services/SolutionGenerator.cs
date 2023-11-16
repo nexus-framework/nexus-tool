@@ -1,17 +1,15 @@
-﻿using System.Drawing;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using CaseExtensions;
-using Colorful;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Nexus.Config;
 using Nexus.Extensions;
 using Nexus.Models;
 using Nexus.Runners;
+using Pastel;
 using YamlDotNet.Serialization;
-using Console = Colorful.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 using static Nexus.Extensions.DirectoryExtensions;
 
@@ -32,7 +30,7 @@ public class SolutionGenerator
     {
         if (!_configurationService.IsSolutionDirectoryEmpty())
         {
-            Console.WriteLine("Solution directory is not empty", Color.Red);
+            Console.WriteLine("Solution directory is not empty".Pastel(Constants.Colors.Error));
             return;
         }
         string solutionName = NameExtensions.GetKebabCasedNameWithoutApi(rawName);
@@ -46,7 +44,7 @@ public class SolutionGenerator
 
         if (config == null)
         {
-            Console.WriteLine("Nexus config not found", Color.Red);
+            Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -58,7 +56,7 @@ public class SolutionGenerator
 
         if (!File.Exists(dockerComposePath))
         {
-            Console.WriteLine("Unable to update docker-compose.yml", Color.Red);
+            Console.WriteLine("Unable to update docker-compose.yml".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -81,7 +79,7 @@ public class SolutionGenerator
 
         if (config == null)
         {
-            Console.WriteLine("Nexus config not found", Color.Red);
+            Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -98,17 +96,13 @@ public class SolutionGenerator
 
         if (_configurationService.ServiceExists(info.ServiceNameKebabCaseAndApi))
         {
-            StyleSheet ss = new StyleSheet(Color.Red);
-            ss.AddStyle(info.ServiceNameKebabCaseAndApi, Color.Cyan);
-            Console.WriteLineStyled($"Service {info.ServiceNameKebabCaseAndApi} already exists", ss);
+            Console.WriteLine($"{"Service".Pastel(Constants.Colors.Error)} {info.ServiceNameKebabCaseAndApi.Pastel(Constants.Colors.Info)} {"already exists".Pastel(Constants.Colors.Error)}");
             return;
         }
 
         if (Directory.Exists(info.ServiceCsProjectFolder) && Directory.GetFiles(info.ServiceCsProjectFolder).Length > 0)
         {
-            StyleSheet ss = new StyleSheet(Color.Red);
-            ss.AddStyle(info.ServiceCsProjectFolder.Replace(@"\", @"\\"), Color.Cyan);
-            Console.WriteLineStyled($"Folder \"{info.ServiceCsProjectFolder}\" is not empty", ss);
+            Console.WriteLine($"{"Folder".Pastel(Constants.Colors.Error)} {info.ServiceCsProjectFolder.Pastel(Constants.Colors.Info)} {"is not empty".Pastel(Constants.Colors.Error)}");
             return;
         }
         
@@ -153,7 +147,7 @@ public class SolutionGenerator
 
         if (!File.Exists(appConfigPath))
         {
-            Console.WriteLine("Nexus config not found", Color.Red);
+            Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -162,7 +156,7 @@ public class SolutionGenerator
 
         if (appConfig == null)
         {
-            Console.WriteLine("Nexus config is unreadable", Color.Red);
+            Console.WriteLine("Nexus config is unreadable".Pastel(Constants.Colors.Error));
             return;
         }
         
@@ -186,7 +180,7 @@ public class SolutionGenerator
 
         if (!File.Exists(envFilePath))
         {
-            Console.WriteLine(".env not found", Color.Red);
+            Console.WriteLine(".env not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -210,7 +204,7 @@ public class SolutionGenerator
 
         if (!File.Exists(ymlFilePath))
         {
-            Console.WriteLine("Prometheus config not found", Color.Red);
+            Console.WriteLine("Prometheus config not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -261,7 +255,7 @@ public class SolutionGenerator
 
         if (!File.Exists(ymlFilePath))
         {
-            Console.WriteLine("docker-compose.yml not found", Color.Red);
+            Console.WriteLine("docker-compose.yml not found".Pastel(Constants.Colors.Error));
             return;
         }
 
@@ -350,9 +344,7 @@ public class SolutionGenerator
         {
             if (!File.Exists(file))
             {
-                StyleSheet ss = new StyleSheet(Color.Red);
-                ss.AddStyle(file.Replace(@"\", @"\\"), Color.Cyan);
-                Console.WriteLineStyled($"Unable to find file {file}", ss);
+                Console.WriteLine($"{"Unable to find file".Pastel(Constants.Colors.Error)} {file.Pastel(Constants.Colors.Info)}");
                 continue;
             }
             
@@ -375,9 +367,7 @@ public class SolutionGenerator
 
         if (csProjFile == null)
         {
-            StyleSheet ss = new StyleSheet(Color.Red);
-            ss.AddStyle("ServiceTemplate.csproj", Color.Cyan);
-            Console.WriteLineStyled($"Unable to find ServiceTemplate.csproj", ss);
+            Console.WriteLine($"{"Unable to find file".Pastel(Constants.Colors.Error)} {"ServiceTemplate.csproj".Pastel(Constants.Colors.Info)}");
             return;
         }
 
@@ -389,9 +379,7 @@ public class SolutionGenerator
     {
         if (!File.Exists(csProjectFilePath))
         {
-            StyleSheet ss = new StyleSheet(Color.Red);
-            ss.AddStyle(csProjectFilePath.Replace(@"\", @"\\"), Color.Cyan);
-            Console.WriteLineStyled($"Unable to find {csProjectFilePath}", ss);
+            Console.WriteLine($"{"Unable to find".Pastel(Constants.Colors.Error)} {csProjectFilePath.Pastel(Constants.Colors.Info)}");
             return;
         }
 
@@ -405,15 +393,14 @@ public class SolutionGenerator
 
         if (config == null)
         {
-            Console.WriteLine("Nexus config not found", Color.Red);
+            Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
             return;
         }
         
         string librariesFolder = Path.Combine(_configurationService.GetBasePath(), "libraries");
         if (Directory.Exists(librariesFolder))
         {
-            Console.WriteLine("Libraries already exist");
-            Console.WriteLine("Libraries already exist", Color.Red);
+            Console.WriteLine("Libraries already exist".Pastel(Constants.Colors.Error));
         }
 
         string solutionFile = Path.Combine(_configurationService.GetBasePath(), $"{config.SolutionName}.sln");

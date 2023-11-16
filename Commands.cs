@@ -1,9 +1,9 @@
-﻿using System.Drawing;
-using Cocona;
+﻿using Cocona;
 using Nexus.Config;
 using Nexus.Runners;
 using Nexus.Services;
-using Console = Colorful.Console;
+using Pastel;
+
 namespace Nexus;
 
 internal static class Commands
@@ -23,14 +23,14 @@ internal static class Commands
             await solutionGenerator.Eject();
         }
 
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static async Task Eject()
     {
         SolutionGenerator solutionGenerator = new();
         await solutionGenerator.Eject();
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static async Task AddService(
@@ -39,7 +39,7 @@ internal static class Commands
     {
         SolutionGenerator solutionGenerator = new();
         await solutionGenerator.AddService(name);
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void RunLocal()
@@ -48,7 +48,7 @@ internal static class Commands
         ConsulApiService consulApiService = new();
         NexusRunner runner = new(configurationService, consulApiService);
         runner.RunLocal();
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void RunDocker()
@@ -57,7 +57,7 @@ internal static class Commands
         ConsulApiService consulApiService = new();
         NexusRunner runner = new(configurationService, consulApiService);
         runner.RunDocker();
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void CleanLocal()
@@ -65,7 +65,7 @@ internal static class Commands
         ConfigurationService configurationService = new();
         CleanupService cleanupService = new(configurationService);
         cleanupService.Cleanup(RunType.Local);
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void CleanDocker()
@@ -73,7 +73,7 @@ internal static class Commands
         ConfigurationService configurationService = new();
         CleanupService cleanupService = new(configurationService);
         cleanupService.Cleanup(RunType.Docker);
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void DockerBuild()
@@ -82,7 +82,7 @@ internal static class Commands
         BuildDockerImagesRunner runner = new(configurationService, RunType.Docker);
         RunState state = new("", "");
         runner.Start(state);
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 
     internal static void DockerPublish()
@@ -95,6 +95,6 @@ internal static class Commands
 
         RunState state = new("", "");
         buildDockerImagesRunner.Start(state);
-        Console.WriteLine("Done",  Color.Green);
+        Console.WriteLine("Done".Pastel(Constants.Colors.Success));
     }
 }
