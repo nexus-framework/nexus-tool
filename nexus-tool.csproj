@@ -28,6 +28,8 @@
     <PackageReference Include="Cocona" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Pastel" Version="4.2.0" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.47.0" />
     <PackageReference Include="YamlDotNet" Version="13.1.0" />
   </ItemGroup>
 
