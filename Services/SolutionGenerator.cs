@@ -8,7 +8,6 @@ using Nexus.Config;
 using Nexus.Extensions;
 using Nexus.Models;
 using Nexus.Runners;
-using Pastel;
 using Spectre.Console;
 using YamlDotNet.Serialization;
 using static Nexus.Extensions.ConsoleUtilities;
@@ -38,14 +37,15 @@ public class SolutionGenerator
             .StartAsync(async context =>
             {
                 // Check solution directory
-                ProgressTask t1 = context.AddTask("Checking solution directory", false, maxValue: 100D);
+                ProgressTask t1 = context.AddTask("Checking solution directory");
                 if (!_configurationService.IsSolutionDirectoryEmpty())
                 {
                     AnsiConsole.MarkupLine("[red]Solution directory is not empty[/]");
-                    t1.Increment(100);
+                    t1.StopTask();
                     return false;
                 }
                 t1.Increment(100);
+                t1.StopTask();
                 
                 // Download solution
                 ProgressTask t2 = context.AddTask("Downloading solution template");
@@ -55,10 +55,11 @@ public class SolutionGenerator
                 if (!downloadResult)
                 {
                     AnsiConsole.MarkupLine("[red]Unable to download solution template[/]");
-                    t2.Increment(100);
+                    t2.StopTask();
                     return false;
                 }
                 t2.Increment(100);
+                t2.StopTask();
 
                 // Replace ProjectName in nexus config
                 ProgressTask t3 = context.AddTask("Updating nexus config");
@@ -67,13 +68,14 @@ public class SolutionGenerator
                 if (config == null)
                 {
                     AnsiConsole.MarkupLine("[red]Nexus config not found[/]");
-                    t3.Increment(100);
+                    t3.StopTask();
                     return false;
                 }
 
                 config.SolutionName = solutionName;
                 _configurationService.WriteConfiguration(config);
                 t3.Increment(100);
+                t3.StopTask();
 
                 // Replace names in docker-compose
                 ProgressTask t4 = context.AddTask("Updating docker-compose");
@@ -82,6 +84,7 @@ public class SolutionGenerator
                 if (!File.Exists(dockerComposePath))
                 {
                     AnsiConsole.MarkupLine("[red]Unable to update docker-compose.yml[/]");
+                    t4.StopTask();
                     return false;
                 }
 
@@ -93,92 +96,173 @@ public class SolutionGenerator
                     {
                         lines[i] = lines[i].Replace("nexus", solutionName);
                     }
+                    
+                    t4.Increment((double)1 / lines.Length * 100);
                 }
 
                 await File.WriteAllLinesAsync(dockerComposePath, lines, cancellationToken);
                 t4.Increment(100);
+                t4.StopTask();
                 return true;
         });
         
         return result;
     }
 
-    public async Task AddService(string rawName)
+    public async Task<bool> AddService(string rawName)
     {
-        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+        bool result = await AnsiConsole
+            .Progress()
+            .AutoClear(false)
+            .HideCompleted(false)
+            .Columns(new ProgressColumn[]
+            {
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new ElapsedTimeColumn(),
+                new SpinnerColumn(),
+            })
+            .StartAsync(async context =>
+            {
+                ProgressTask t1 = context.AddTask("Checking config");
+                NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
 
-        if (config == null)
-        {
-            //Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
-            return;
-        }
+                if (config == null)
+                {
+                    AnsiConsole.MarkupLine("[red]Nexus config not found[/]");
+                    t1.StopTask();
+                    return false;
+                }
+                t1.Increment(100);
 
-        int httpsPort = _configurationService.GetNewServicePort();
-        int dbPort = _configurationService.GetNewDbPort();
-        
-        ServiceInitializationInfo info = new (
-            solutionName: config.SolutionName,
-            serviceNameRaw: rawName,
-            basePath: _configurationService.GetBasePath(),
-            httpsPort: httpsPort,
-            httpPort: httpsPort + 1,
-            dbPort);
+                ProgressTask t2 = context.AddTask("Verifying service config");
+                int httpsPort = _configurationService.GetNewServicePort();
+                int dbPort = _configurationService.GetNewDbPort();
+                
+                ServiceInitializationInfo info = new (
+                    solutionName: config.SolutionName,
+                    serviceNameRaw: rawName,
+                    basePath: _configurationService.GetBasePath(),
+                    httpsPort: httpsPort,
+                    httpPort: httpsPort + 1,
+                    dbPort);
 
-        if (_configurationService.ServiceExists(info.ServiceNameKebabCaseAndApi))
-        {
-            //Console.WriteLine($"{"Service".Pastel(Constants.Colors.Error)} {info.ServiceNameKebabCaseAndApi.Pastel(Constants.Colors.Info)} {"already exists".Pastel(Constants.Colors.Error)}");
-            return;
-        }
+                if (_configurationService.ServiceExists(info.ServiceNameKebabCaseAndApi))
+                {
+                    AnsiConsole.MarkupLine($"[red]Service {info.ServiceNameKebabCaseAndApi} already exists[/]");
+                    t2.StopTask();
+                    return false;
+                }
+                t2.Increment(50);
 
-        if (Directory.Exists(info.ServiceCsProjectFolder) && Directory.GetFiles(info.ServiceCsProjectFolder).Length > 0)
-        {
-            //Console.WriteLine($"{"Folder".Pastel(Constants.Colors.Error)} {info.ServiceCsProjectFolder.Pastel(Constants.Colors.Info)} {"is not empty".Pastel(Constants.Colors.Error)}");
-            return;
-        }
-        
-        // Create service folders
-        EnsureDirectories(new[] { info.ServiceRootFolder, info.ServiceCsProjectFolder });
+                if (Directory.Exists(info.ServiceCsProjectFolder) && Directory.GetFiles(info.ServiceCsProjectFolder).Length > 0)
+                {
+                    AnsiConsole.MarkupLine($"[red]Folder {info.ServiceCsProjectFolder} is not empty[/]");
+                    t2.StopTask();
+                    return false;
+                }
+                t2.Increment(25);
+                
+                // Create service folders
+                EnsureDirectories(new[] { info.ServiceRootFolder, info.ServiceCsProjectFolder });
+                t2.Increment(25);
 
-        // Download project template
-        await _gitHubService.DownloadServiceTemplate(info.ServiceCsProjectFolder);
-        
-        // Replace variables
-        //Console.WriteLine("Initializing project template");
-        ReplaceTemplateVariables(info);
-        
-        // Update docker compose yml
-        // Add DB
-        // Add networks
-        //Console.WriteLine("Updating docker-compose");
-        UpdateDockerComposeYaml(info, RunType.Local);
-        UpdateDockerComposeYaml(info, RunType.Docker);
+                // Download project template
+                ProgressTask t3 = context.AddTask("Downloading project template");
+                await _gitHubService.DownloadServiceTemplate(info.ServiceCsProjectFolder);
+                t3.Increment(100);
+                
+                // Replace variables
+                ProgressTask t4 = context.AddTask("Initializing project template");
+                if (!ReplaceTemplateVariables(info, t4))
+                {
+                    t4.StopTask();
+                    return false;
+                }
+                t4.Increment(100);
+                
+                // Update docker compose yml
+                // Add DB
+                // Add networks
+                ProgressTask t5 = context.AddTask("Updating docker-compose");
+                if (!UpdateDockerComposeYaml(info, RunType.Local))
+                {
+                    t5.StopTask();
+                    return false;
+                }
+                t5.Increment(50);
+                
+                if(!UpdateDockerComposeYaml(info, RunType.Docker))
+                {
+                    t5.StopTask();
+                    return false;
+                }
+                t5.Increment(50);
 
-        // Update prometheus yml
-        //Console.WriteLine("Updating prometheus config");
-        UpdatePrometheusYaml(info, RunType.Local);
-        UpdatePrometheusYaml(info, RunType.Docker);
+                // Update prometheus yml
+                ProgressTask t6 = context.AddTask("Updating prometheus config");
+                if(!UpdatePrometheusYaml(info, RunType.Local))
+                {
+                    t6.StopTask();
+                    return false;
+                }
+                t6.Increment(50);
 
-        //Console.WriteLine("Updating env file");
-        UpdateEnvironmentFile(info);
+                if (!UpdatePrometheusYaml(info, RunType.Docker))
+                {
+                    t6.StopTask();
+                    return false;
+                }
+                t6.Increment(50);
+                
+                ProgressTask t7 = context.AddTask("Updating environment file");
+                if (!UpdateEnvironmentFile(info))
+                {
+                    t7.StopTask();
+                    return false;
+                }
+                t7.Increment(100);
+                
+                // Add service to hc config
+                ProgressTask t8 = context.AddTask("Updating health checks config");
+                if (!UpdateHcConfig(info))
+                {
+                    t8.StopTask();
+                    return false;
+                }
+                t8.Increment(100);
+                
+                // Add service to solution
+                ProgressTask t9 = context.AddTask("Updating solution file");
+                if (!AddCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile))
+                {
+                    t9.StopTask();
+                    return false;
+                }
+                t9.Increment(100);
+                
+                ProgressTask t10 = context.AddTask("Updating nexus config");
+                if (!_configurationService.AddService(info))
+                {
+                    t10.StopTask();
+                    return false;
+                }
+                t10.Increment(100);
+                return true;
+            });
         
-        // Add service to hc config
-        UpdateHcConfig(info);
-        
-        // Add service to solution
-        AddCsProjectFileToSolution(info.SolutionPath, info.ServiceCsProjectFile);
-        
-        _configurationService.AddService(info);
+        return result;
     }
 
-    private void UpdateHcConfig(ServiceInitializationInfo info)
+    private bool UpdateHcConfig(ServiceInitializationInfo info)
     {
-        //Console.WriteLine("Adding service to Health Checks");
         string appConfigPath = Path.Combine(_configurationService.HealthChecksDashboardConsulDirectory, "app-config.json");
 
         if (!File.Exists(appConfigPath))
         {
-            //Console.WriteLine("Nexus config not found".Pastel(Constants.Colors.Error));
-            return;
+            AnsiConsole.MarkupLine("[red]Nexus config not found[/]");
+            return false;
         }
 
         string appConfigJson = File.ReadAllText(appConfigPath);
@@ -186,8 +270,8 @@ public class SolutionGenerator
 
         if (appConfig == null)
         {
-            //Console.WriteLine("Nexus config is unreadable".Pastel(Constants.Colors.Error));
-            return;
+            AnsiConsole.MarkupLine("[red]Nexus config is unreadable[/]");
+            return false;
         }
         
         JArray clients = appConfig.HealthCheck.Clients as JArray ?? new JArray();
@@ -202,16 +286,17 @@ public class SolutionGenerator
         string updatedJson = JsonConvert.SerializeObject(appConfig);
         
         File.WriteAllText(appConfigPath, updatedJson);
+        return true;
     }
 
-    private void UpdateEnvironmentFile(ServiceInitializationInfo info)
+    private bool UpdateEnvironmentFile(ServiceInitializationInfo info)
     {
         string envFilePath = _configurationService.EnvironmentFile;
 
         if (!File.Exists(envFilePath))
         {
-            //Console.WriteLine(".env not found".Pastel(Constants.Colors.Error));
-            return;
+            AnsiConsole.MarkupLine($"[red]Environment file not found[/] [cyan]{envFilePath}[/]");
+            return false;
         }
 
         StringBuilder sb = new ();
@@ -226,16 +311,17 @@ public class SolutionGenerator
 
         string newVars = sb.ToString();
         File.AppendAllText(envFilePath, newVars);
+        return true;
     }
 
-    private void UpdatePrometheusYaml(ServiceInitializationInfo info, RunType runType)
+    private bool UpdatePrometheusYaml(ServiceInitializationInfo info, RunType runType)
     {
         string ymlFilePath = _configurationService.GetPrometheusFile(runType);
 
         if (!File.Exists(ymlFilePath))
         {
-            //Console.WriteLine("Prometheus config not found".Pastel(Constants.Colors.Error));
-            return;
+            AnsiConsole.MarkupLine($"[red]Prometheus config not found[/]");
+            return false;
         }
 
         string text = File.ReadAllText(ymlFilePath);
@@ -277,16 +363,17 @@ public class SolutionGenerator
         string updatedYaml = serializer.Serialize(yamlObject);
         
         File.WriteAllText(ymlFilePath, updatedYaml);
+        return true;
     }
 
-    private void UpdateDockerComposeYaml(ServiceInitializationInfo info, RunType runType)
+    private bool UpdateDockerComposeYaml(ServiceInitializationInfo info, RunType runType)
     {
         string ymlFilePath = _configurationService.GetDockerComposePath(runType);
 
         if (!File.Exists(ymlFilePath))
         {
-            //Console.WriteLine("docker-compose.yml not found".Pastel(Constants.Colors.Error));
-            return;
+            AnsiConsole.MarkupLine($"[red]docker-compose.yml not found[/]");
+            return false;
         }
 
         string dockerComposeText = File.ReadAllText(ymlFilePath);
@@ -362,9 +449,10 @@ public class SolutionGenerator
             .Replace("##NETWORKS_START##", networkToAdd);
         
         File.WriteAllText(ymlFilePath, outputYaml);
+        return true;
     }
 
-    private void ReplaceTemplateVariables(ServiceInitializationInfo info)
+    private bool ReplaceTemplateVariables(ServiceInitializationInfo info, ProgressTask progressTask)
     {
         // List files
         string[] files = Directory.GetFiles(info.ServiceCsProjectFolder, "*.*", SearchOption.AllDirectories);
@@ -374,7 +462,7 @@ public class SolutionGenerator
         {
             if (!File.Exists(file))
             {
-                //Console.WriteLine($"{"Unable to find file".Pastel(Constants.Colors.Error)} {file.Pastel(Constants.Colors.Info)}");
+                AnsiConsole.MarkupLine($"[yellow]Unable to find file[/] [cyan]{file}[/]");
                 continue;
             }
             
@@ -390,6 +478,7 @@ public class SolutionGenerator
                 .Replace("{{ServiceNameSnakeCase}}", info.ServiceNameSnakeCase);
             
             File.WriteAllText(file, updatedText);
+            progressTask.Increment((double)1/files.Length * 80);
         }
         
         // Rename csproj
@@ -397,24 +486,26 @@ public class SolutionGenerator
 
         if (csProjFile == null)
         {
-            //Console.WriteLine($"{"Unable to find file".Pastel(Constants.Colors.Error)} {"ServiceTemplate.csproj".Pastel(Constants.Colors.Info)}");
-            return;
+            AnsiConsole.MarkupLine($"[yellow]Unable to find file[/] [cyan]ServiceTemplate.csproj[/]");
+            return false;
         }
 
         string updatedName = csProjFile.Replace("ServiceTemplate.csproj", $"{info.ServiceNamePascalCasedAndDotApi}.csproj");
         File.Move(csProjFile, updatedName);
+        progressTask.Increment(20);
+        return true;
     }
 
-    private static void AddCsProjectFileToSolution(string solutionPath, string csProjectFilePath)
+    private static bool AddCsProjectFileToSolution(string solutionPath, string csProjectFilePath)
     {
         if (!File.Exists(csProjectFilePath))
         {
-            //Console.WriteLine($"{"Unable to find".Pastel(Constants.Colors.Error)} {csProjectFilePath.Pastel(Constants.Colors.Info)}");
-            return;
+            AnsiConsole.MarkupLine($"[yellow]Unable to find file[/] [cyan]{csProjectFilePath}[/]");
+            return false;
         }
 
-        //Console.WriteLine($"Adding \"{csProjectFilePath}\" to the solution");
         RunPowershellCommand($"dotnet sln \"{solutionPath}\" add \"{csProjectFilePath}\"");
+        return true;
     }
 
     public async Task<bool> Eject()
@@ -438,41 +529,47 @@ public class SolutionGenerator
                 if (config == null)
                 {
                     AnsiConsole.MarkupLine("[red]Nexus config not found[/]");
-                    t1.Increment(100);
+                    t1.StopTask();
                     return false;
                 }
                 t1.Increment(100);
+                t1.StopTask();
         
                 ProgressTask t2 = context.AddTask("Verifying libraries folder");
                 string librariesFolder = Path.Combine(_configurationService.GetBasePath(), "libraries");
                 if (Directory.Exists(librariesFolder))
                 {
                     AnsiConsole.MarkupLine("[red]Libraries folder already exists[/]");
-                    t2.Increment(100);
+                    t2.StopTask();
                     return false;
                 }
                 t2.Increment(100);
+                t2.StopTask();
 
                 // Download libraries
                 ProgressTask t3 = context.AddTask("Downloading libraries");
                 string solutionFile = Path.Combine(_configurationService.GetBasePath(), $"{config.SolutionName}.sln");
                 await _gitHubService.DownloadLibraries(librariesFolder);
                 t3.Increment(100);
+                t3.StopTask();
         
                 // Clean up libraries folder
                 ProgressTask t4 = context.AddTask("Cleaning up extra library files");
                 CleanupLibrariesFolder(librariesFolder);
                 t4.Increment(100);
+                t4.StopTask();
 
                 ProgressTask t5 = context.AddTask("Copying files to solution");
                 // Add libraries to sln
                 AddLibrariesToSolutionFile(librariesFolder, solutionFile, t5);
                 t5.Increment(100);
+                t5.StopTask();
         
                 // Update csproj files
                 ProgressTask t6 = context.AddTask("Updating csproj files");
                 ReplaceLibrariesInCsProjFiles(librariesFolder, config, t6);
-                t5.Increment(100);
+                t6.Increment(100);
+                t6.StopTask();
 
                 return true;
             });

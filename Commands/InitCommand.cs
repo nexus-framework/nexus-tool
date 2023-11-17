@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace Nexus.Commands;
 
-internal sealed class InitCommand : AsyncCommand<InitCommand.Settings>
+public sealed class InitCommand : AsyncCommand<InitCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {

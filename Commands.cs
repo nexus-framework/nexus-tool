@@ -9,13 +9,6 @@ namespace Nexus;
 // internal static class Commands
 // {
 //
-//     internal static async Task Eject()
-//     {
-//         SolutionGenerator solutionGenerator = new();
-//         await solutionGenerator.Eject();
-//         Console.WriteLine("Done".Pastel(Constants.Colors.Success));
-//     }
-//
 //     internal static async Task AddService(
 //         [Option(shortName: 'n', Description = "Service name", ValueName = "name")]
 //         string name)

@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 
 namespace Nexus.Commands;
 
-internal sealed class EjectCommand : AsyncCommand<EjectCommand.Settings>
+public sealed class EjectCommand : AsyncCommand<EjectCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
@@ -12,9 +12,15 @@ internal sealed class EjectCommand : AsyncCommand<EjectCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
+        if(!AnsiConsole.Confirm("Are you sure you want to eject the libraries? This will replace the library references with source code and is [bold]NOT[/] reversible.", defaultValue: false))
+        {
+            AnsiConsole.MarkupLine("[red]Aborting[/]");
+            return 1;
+        }
+        
         AnsiConsole.MarkupLine("[bold]Ejecting Libraries[/]");
         SolutionGenerator solutionGenerator = new();
-        var result = await solutionGenerator.Eject();
+        bool result = await solutionGenerator.Eject();
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Done[/]");

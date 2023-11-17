@@ -129,7 +129,7 @@ public class ConfigurationService
 
     public bool IsSolutionDirectoryEmpty()
     {
-        var files = Directory.GetFiles(GetBasePath());
+        string[] files = Directory.GetFiles(GetBasePath());
         return files.Length == 0;
     }
 
@@ -151,7 +151,6 @@ public class ConfigurationService
         });
 
         WriteConfiguration(config);
-        Console.WriteLine("Service added");
         return true;
     }
 
@@ -166,7 +165,7 @@ public class ConfigurationService
 
         if (config.Services.Any(x => x.ServiceName == serviceName))
         {
-            Console.WriteLine("Service already exists");
+            //Console.WriteLine("Service already exists");
             return true;
         }
 

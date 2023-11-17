@@ -1,11 +1,4 @@
-﻿using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using Cocona;
-using Cocona.Builder;
-using Nexus.Commands;
-using Nexus.Services;
-using Pastel;
+﻿using Nexus.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using Color = Spectre.Console.Color;
@@ -18,7 +11,7 @@ public class Program
     {
         AnsiConsole.Write(new FigletText("Nexus Framework").LeftJustified().Color(Color.Green));
         
-        var app = new CommandApp();
+        CommandApp app = new CommandApp();
         app.Configure(config =>
         {
             config.AddCommand<InitCommand>("init")
@@ -26,10 +19,13 @@ public class Program
 
             config.AddCommand<EjectCommand>("eject")
                 .WithDescription("Replace library references with source code");
-            
-            // config.AddCommand<AddCommand>("add")
-            //     .WithDescription("Add components to the solution");
-            //
+
+            config.AddBranch<AddSettings>("add", options =>
+            {
+                options.AddCommand<AddServiceCommand>("service")
+                    .WithDescription("Add a new service");
+            });
+
             // config.AddCommand<RunCommand>("run")
             //     .WithDescription("Run development environment");
             //
@@ -48,20 +44,6 @@ public class Program
     //
     //     CoconaAppBuilder builder = CoconaApp.CreateBuilder();
     //     CoconaApp app = builder.Build();
-    //
-    //     app.AddCommand("init", Commands.InitSolution)
-    //         .WithDescription("Create a new Nexus Solution");
-    //
-    //     app.AddCommand("eject", Commands.Eject)
-    //         .WithDescription("Replace library references with source code");
-    //
-    //     app.AddSubCommand("add", x =>
-    //         {
-    //             x.AddCommand("service", Commands.AddService)
-    //                 .WithDescription("Add a new service");
-    //         })
-    //         .WithDescription("Add components to the solution");
-    //
     //     app.AddSubCommand("run", x =>
     //         {
     //             x.AddCommand("local", Commands.RunLocal).WithDescription("Run local development environment");
