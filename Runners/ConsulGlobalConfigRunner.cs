@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Services;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -12,40 +13,46 @@ public class ConsulGlobalConfigRunner : ComponentRunner
     public ConsulGlobalConfigRunner(
         ConfigurationService configurationService,
         ConsulApiService consulApiService,
-        RunType runType) : base(configurationService, runType)
+        RunType runType,
+        ProgressContext context) : base(configurationService, runType, context)
     {
         _consulApiService = consulApiService;
     }
 
     protected override RunState OnExecuted(RunState state)
-    {        
+    {
+        ProgressTask progressTask = Context.AddTask("Updating Consul Global Config");
         if(!File.Exists(ConfigurationService.GlobalConsulFile))
         {
-            Console.Error.WriteLine("Unable to add nexus global config to consul");
+            AddError($"Unable to find nexus global config at {ConfigurationService.GlobalConsulFile}", state);
             state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
             return state;
         }
+        progressTask.Increment(25);
 
         string appConfigJson = File.ReadAllText(ConfigurationService.GlobalConsulFile);
         dynamic? appConfig = JsonConvert.DeserializeObject<dynamic>(appConfigJson);
 
         if (appConfig == null)
         {
-            Console.Error.WriteLine($"Unable to consul global config");
+            AddError($"Unable to parse nexus global config at {ConfigurationService.GlobalConsulFile}", state);
+            progressTask.StopTask();
             state.LastStepStatus = StepStatus.Failure;
             return state;
         }
+        progressTask.Increment(25);
  
         appConfig.SerilogSettings.ElasticSearchSettings.Uri = ConfigurationService.GetElasticSearchEndpoint(RunType);
         appConfig.TelemetrySettings.Endpoint = ConfigurationService.GetTelemetryEndpoint(RunType);
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(ConfigurationService.GlobalConsulFile, updatedAppConfigJson, Encoding.UTF8);
-        Console.WriteLine($"Updated consul global config");
         
         _consulApiService.UploadKv("nexus-service", appConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed updated consul global config to Consul KV");
         
+        progressTask.Increment(50);
+        progressTask.StopTask();
         state.LastStepStatus = StepStatus.Success;
         return state;
     }

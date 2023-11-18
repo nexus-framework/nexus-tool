@@ -165,7 +165,6 @@ public class ConfigurationService
 
         if (config.Services.Any(x => x.ServiceName == serviceName))
         {
-            //Console.WriteLine("Service already exists");
             return true;
         }
 

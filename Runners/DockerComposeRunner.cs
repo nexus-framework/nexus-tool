@@ -1,4 +1,5 @@
 ﻿using Nexus.Config;
+using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
@@ -7,18 +8,20 @@ public class DockerComposeRunner : ComponentRunner
 {
     public DockerComposeRunner(
         ConfigurationService configurationService,
-        RunType runType) : base(configurationService, runType)
+        RunType runType, 
+        ProgressContext context) : base(configurationService, runType, context)
     {
     }
 
     protected override RunState OnExecuted(RunState state)
     {
+        ProgressTask progressTask = Context.AddTask("Running Docker Compose");
         string dockerComposePath = ConfigurationService.GetDockerComposePath(RunType);
         string command = $"docker-compose -f \"{dockerComposePath}\" up -d";
-        RunPowershellCommand(command, false);
+        RunPowershellCommand(command);
 
-        Console.WriteLine("Docker Services Started");
-
+        progressTask.Increment(100);
+        progressTask.StopTask();
         state.LastStepStatus = StepStatus.Success;
         return state;
     }

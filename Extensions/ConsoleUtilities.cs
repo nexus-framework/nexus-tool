@@ -1,17 +1,15 @@
 ﻿using System.Diagnostics;
-using System.Drawing;
-using BetterConsoles.Tables;
-using BetterConsoles.Tables.Builders;
-using BetterConsoles.Tables.Configuration;
-using BetterConsoles.Tables.Models;
+using System.Text;
 using Nexus.Runners;
+using Spectre.Console;
 
 namespace Nexus.Extensions;
 
 public static class ConsoleUtilities
 {
-    public static string RunPowershellCommand(string command, bool captureOutput = true)
+    public static string RunPowershellCommand(string command)
     {
+        bool captureOutput = true;
         Process process = new ();
         string output = string.Empty;
         try
@@ -44,8 +42,9 @@ public static class ConsoleUtilities
         return output;
     }
     
-    public static string RunDockerCommand(string command, bool captureOutput = true)
+    public static string RunDockerCommand(string command)
     {
+        bool captureOutput = true;
         Process process = new ();
         string output = string.Empty;
         try
@@ -61,7 +60,6 @@ public static class ConsoleUtilities
             
             process.StartInfo.UseShellExecute = false;
             process.EnableRaisingEvents = false;
-
             process.Start();
 
             if (captureOutput)
@@ -74,54 +72,96 @@ public static class ConsoleUtilities
             process.WaitForExit();
             process.Close();
         }
+        return output;
+    }
+    
+    public static string RunDockerCommandV2(string command)
+    {
+        bool captureOutput = true;
+        Process process = new ();
+        process.StartInfo.FileName = "docker";
+        process.StartInfo.Arguments = command;
+
+        if (captureOutput)
+        {
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+        }
+        
+        process.StartInfo.UseShellExecute = false;
+        process.EnableRaisingEvents = false;
+        
+        StringBuilder outputBuilder = new StringBuilder();
+        StringBuilder errorBuilder = new StringBuilder();
+        
+        using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
+        using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
+        {
+            if (captureOutput)
+            {
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (e.Data == null)
+                    {
+                        outputWaitHandle.Set();
+                    }
+                    else
+                    {
+                        outputBuilder.AppendLine(e.Data);
+                    }
+                };
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data == null)
+                    {
+                        errorWaitHandle.Set();
+                    }
+                    else
+                    {
+                        errorBuilder.AppendLine(e.Data);
+                    }
+                };
+            }
+            
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.WaitForExit(10 * 60 * 1000);
+            outputWaitHandle.WaitOne(10 * 60 * 1000);
+            errorWaitHandle.WaitOne(10 * 60 * 1000);
+        }
+        string output = outputBuilder.ToString().Trim();
+        string error = errorBuilder.ToString().Trim();
 
         return output;
     }
 
     public static void PrintState(RunState state)
     {
-        Table? tokenTable = new TableBuilder()
-            .AddColumn("Service", headerFormat: new CellFormat
-            {
-                Alignment = Alignment.Left,
-                ForegroundColor = Constants.Colors.Info,
-            }, rowsFormat: new CellFormat { ForegroundColor = Constants.Colors.Info })
-            .AddColumn("Token", headerFormat: new CellFormat
-            {
-                Alignment = Alignment.Left,
-                ForegroundColor = Color.Gold,
-            }, rowsFormat: new CellFormat { ForegroundColor = Color.Gold })
-            .Build();
+        Spectre.Console.Table table = new Spectre.Console.Table();
+        table.Border(TableBorder.Rounded);
+        table.AddColumn(new TableColumn("[bold]Service[/]").LeftAligned());
+        table.AddColumn(new TableColumn("[bold]Url[/]").LeftAligned());
+        table.AddColumn(new TableColumn("[bold]Token[/]").LeftAligned());
         
-        tokenTable.AddRow("Consul", state.GlobalToken);
         foreach (KeyValuePair<string, string> serviceToken in state.ServiceTokens)
         {
-            tokenTable.AddRow(serviceToken.Key, serviceToken.Value);
+            table.AddRow(serviceToken.Key, "[cyan]N/A[/]", $"[yellow]{serviceToken.Value}[/]");
         }
-        tokenTable.Config = TableConfig.Unicode();
+        table.AddRow("Consul", "[cyan]http://localhost:8500[/]", $"[yellow]{state.GlobalToken}[/]");
+        table.AddRow("Frontend App", "[cyan]http://localhost:3000[/]", "[yellow]N/A[/]");
+        table.AddRow("Grafana", "[cyan]http://localhost:3900[/]", "[yellow]N/A[/]");
+        table.AddRow("Jaeger", "[cyan]http://localhost:16686[/]", "[yellow]N/A[/]");
+        table.AddRow("Prometheus", "[cyan]http://localhost:9090[/]", "[yellow]N/A[/]");
         
-        Table? servicesTable = new TableBuilder()
-            .AddColumn("Service", headerFormat: new CellFormat
-            {
-                Alignment = Alignment.Left,
-                ForegroundColor = Constants.Colors.Info,
-            }, rowsFormat: new CellFormat { ForegroundColor = Constants.Colors.Info })
-            .AddColumn("Url", headerFormat: new CellFormat
-            {
-                Alignment = Alignment.Left,
-                ForegroundColor = Color.Gold,
-            }, rowsFormat: new CellFormat { ForegroundColor = Color.Gold })
-            .Build();
-        servicesTable.Config = TableConfig.Unicode();
+        AnsiConsole.Write(table);
+    }
 
-        servicesTable.AddRow("Consul", "http://localhost:8500");
-        servicesTable.AddRow("Frontend App", "http://localhost:3000");
-        servicesTable.AddRow("Jaeger", "http://localhost:16686");
-        servicesTable.AddRow("Kibana", "http://localhost:5601");
-        servicesTable.AddRow("Prometheus", "http://localhost:9090");
-        servicesTable.AddRow("Grafana", "http://localhost:3900");
-        
-        Console.WriteLine(tokenTable.ToString());
-        Console.WriteLine(servicesTable.ToString());
+    public static void PrintVersion(RunState state)
+    {
+        if (!string.IsNullOrEmpty(state.DockerImageVersion))
+        {
+            AnsiConsole.MarkupLine($"Build Version: [cyan]{state.DockerImageVersion}[/]");
+        }
     }
 }

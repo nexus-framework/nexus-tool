@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Models;
 using Nexus.Services;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -12,8 +13,8 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         ConfigurationService configurationService,
         NexusServiceConfiguration configuration,
         RunType runType,
-        ConsulApiService consulApiService)
-        : base(configurationService, configuration, runType, consulApiService)
+        ConsulApiService consulApiService, ProgressContext context)
+        : base(configurationService, configuration, runType, consulApiService, context)
     {
     }
 
@@ -24,13 +25,12 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 
     protected override void UpdateAppConfig(RunState state)
     {
-        Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
         string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayConsulDirectory,
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
         {
-            Console.Error.WriteLine($"File not found: app-config for {Configuration.ServiceName}");
+            AddError($"File not found: app-config for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -39,7 +39,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 
         if (appConfig == null)
         {
-            Console.Error.WriteLine($"Unable to read file: app-config for {Configuration.ServiceName}");
+            AddError($"Unable to read file: app-config for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -47,11 +47,9 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(appConfigPath, updatedAppConfigJson, Encoding.UTF8);
-        Console.WriteLine($"Updated app-config for {Configuration.ServiceName}");
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
     protected override void UpdateAppSettings(RunState state)
@@ -61,7 +59,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 
         if (!File.Exists(appSettingsPath))
         {
-            Console.Error.WriteLine($"File not found: appsettings.json for {Configuration.ServiceName}");
+            AddError($"File not found: appsettings.json for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -70,7 +68,7 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 
         if (appSettings == null)
         {
-            Console.Error.WriteLine($"Unable to read file: appsettings.json for {Configuration.ServiceName}");
+            AddError($"Unable to read file: appsettings.json for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -78,8 +76,6 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
         File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
-        
-        Console.WriteLine($"Updated appsettings.json for {Configuration.ServiceName}");
     }
 
     protected override PolicyCreationResult CreatePolicy(string globalToken)
@@ -123,5 +119,5 @@ public class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
         File.WriteAllText(ocelotConfigPath, updatedOcelotConfigJson);
     }
 
-    protected override string DisplayName => "Api Gateway Runner";
+    protected override string DisplayName => "API Gateway Runner";
 }

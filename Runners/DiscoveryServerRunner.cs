@@ -2,47 +2,46 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Nexus.Config;
-using Pastel;
+using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
 
 public class DiscoveryServerRunner : ComponentRunner
 {
-    public DiscoveryServerRunner(ConfigurationService configurationService, RunType runType) : base(configurationService, runType)
+    public DiscoveryServerRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
+        : base(configurationService, runType, context)
     {
     }
     
     protected override RunState OnExecuted(RunState state)
     {
+        ProgressTask progressTask = Context.AddTask("Starting Discovery Server");
         string configFolder = ConfigurationService.DiscoveryServerConfigFolder;
         string[] files = Directory.GetFiles(configFolder, "server*.json");
         
         // Replace subnet ip
-        Console.WriteLine("Updating consul server configs");
         ReplaceSubnetIpInConsulServerConfig(files, state.SubnetIp);
+        progressTask.Increment(10);
 
         // Docker compose up
-        Console.WriteLine("Starting consul server on docker");
         string dockerComposeYmlPath = ConfigurationService.DiscoveryServerDockerCompose;
         RunPowershellCommand($"docker-compose -f \"{dockerComposeYmlPath}\" up --detach");
+        progressTask.Increment(40);
 
         string consulAclPath = ConfigurationService.DiscoveryServerAcl;
 
         // Copy ACL to servers
-        Console.WriteLine("Copying configs to docker containers");
         for (int i = 1; i <= files.Length; i++)
         {
             RunDockerCommand($"cp \"{consulAclPath}\" consul-server{i}:/consul/config/consul-acl.json");
         }
+        progressTask.Increment(10);
 
         // Restart servers
         for (int i = 1; i <= files.Length; i++)
         {
             string containerName = $"consul-server{i}";
-
-            Console.WriteLine($"{"Restarting consul server:".Pastel(Constants.Colors.Default)} {containerName.Pastel(Constants.Colors.Info)}");
-            
             RunDockerCommand($"container restart {containerName}");
             
             string containerIp = string.Empty;
@@ -50,14 +49,12 @@ public class DiscoveryServerRunner : ComponentRunner
             
             while (containerIp == string.Empty && retries <= 5)
             {
-                Console.WriteLine($"Waiting for {containerName} to be up again (try: {retries+1})...");
                 containerIp =
                     RunDockerCommand(
                         $"container inspect {containerName} --format {{{{.NetworkSettings.Networks.{state.NetworkName}.IPAddress}}}}");
 
                 if (IPAddress.TryParse(containerIp, out _))
                 {
-                    Console.WriteLine($"{containerName} is up");
                     break;
                 }
                 
@@ -65,6 +62,7 @@ public class DiscoveryServerRunner : ComponentRunner
                 Thread.Sleep(5000);
             }
         }
+        progressTask.Increment(10);
         
         // Check if anonymous ACL has been created
         string[] containerNames = Enumerable
@@ -73,7 +71,6 @@ public class DiscoveryServerRunner : ComponentRunner
             .ToArray();
         for (int logRetry = 0; logRetry < 5; logRetry++)
         {
-            Console.WriteLine($"Waiting for global-management policy to be created (try: {logRetry + 1})...");
             string logs = string.Join('\n', containerNames.Select(x => RunDockerCommand($"logs {x}")));
             if (logs.Contains("Created ACL anonymous token from configuration"))
             {
@@ -81,6 +78,7 @@ public class DiscoveryServerRunner : ComponentRunner
             }
             Thread.Sleep(2500);
         }
+        progressTask.Increment(10);
 
         // Bootstrap acl
         string bootstrapOutput = RunDockerCommand("exec consul-server1 consul acl bootstrap");
@@ -89,20 +87,22 @@ public class DiscoveryServerRunner : ComponentRunner
         
         if (string.IsNullOrEmpty(state.GlobalToken))
         {
-            Console.Error.WriteLine("Unable to Bootstrap Consul ACL");
+            AddError("Unable to Bootstrap Consul ACL", state);
             state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
             return state;
         }
-        Console.WriteLine($"Discovery Server ACL Bootstrap Done. Token: {state.GlobalToken}");
+        progressTask.Increment(10);
         
         // Set agent tokens
         for (int i = 1; i <= files.Length; i++)
         {
-            Console.WriteLine($"Setting token for consul-server{i}");
             RunDockerCommand(
                 $"exec -e CONSUL_HTTP_TOKEN=\"{state.GlobalToken}\" consul-server{i} consul acl set-agent-token agent \"{state.GlobalToken}\"");
         }
         
+        progressTask.Increment(10);
+        progressTask.StopTask();
         state.LastStepStatus = StepStatus.Success;
         return state;
     }

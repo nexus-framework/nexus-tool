@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Models;
 using Nexus.Services;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -16,8 +17,9 @@ public abstract class ServiceRunner<T> : ComponentRunner
         ConfigurationService configurationService,
         T configuration,
         RunType runType, 
-        ConsulApiService consulApiService) 
-        : base(configurationService, runType)
+        ConsulApiService consulApiService,
+        ProgressContext context)
+        : base(configurationService, runType, context)
     {
         Configuration = configuration;
         ConsulApiService = consulApiService;
@@ -25,44 +27,49 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
     protected override RunState OnExecuted(RunState state)
     {
+        ProgressTask progressTask = Context.AddTask($"Setting up {Configuration.ServiceName}");
+        
         // Create policy
-        Console.WriteLine($"Creating policy for {Configuration.ServiceName}");
         PolicyCreationResult policy = CreatePolicy(state.GlobalToken);
 
         if (string.IsNullOrEmpty(policy.Id))
         {
             Console.Error.WriteLine($"Unable to create policy for {Configuration.ServiceName}");
             state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
             return state;
         }
         
-        Console.WriteLine($"Policy created for {Configuration.ServiceName}: {policy.Name} | {policy.Id}");
+        progressTask.Increment(25);
         state.Policies[Configuration.ServiceName] = policy;
         
         // Create token
-        Console.WriteLine($"Creating token for {Configuration.ServiceName}");
         string serviceToken = CreateToken(state, policy.Name);
 
         if (string.IsNullOrEmpty(serviceToken))
         {
-            Console.Error.WriteLine($"Unable to create service token. for {Configuration.ServiceName}");
+            AnsiConsole.MarkupLine($"[red]Unable to create service token for {Configuration.ServiceName}[/]");
             state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
             return state;
         }
         
-        Console.WriteLine($"Created token for {Configuration.ServiceName}");
+        progressTask.Increment(25);
         state.ServiceTokens[Configuration.ServiceName] = serviceToken;
         
         // Update app-config
         // Create KV
         UpdateAppConfig(state);
+        progressTask.Increment(25);
         
         // Update AppSettings
         UpdateAppSettings(state);
+        progressTask.Increment(25);
         
         // Add to ServiceList
         state.ServiceUrls.Add(Configuration.ServiceName, $"https://localhost:{Configuration.Port}");
 
+        progressTask.StopTask();
         state.LastStepStatus = StepStatus.Success;
         return state;
     }
@@ -90,13 +97,12 @@ public abstract class ServiceRunner<T> : ComponentRunner
     
     protected virtual void UpdateAppConfig(RunState state)
     {
-        Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
         string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
         {
-            Console.Error.WriteLine($"File not found: app-config for {Configuration.ServiceName}");
+            AnsiConsole.MarkupLine($"[red]File not found: app-config for {Configuration.ServiceName}[/]");
             return;
         }
 
@@ -105,17 +111,15 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         if (appConfig == null)
         {
-            Console.Error.WriteLine($"Unable to read file: app-config for {Configuration.ServiceName}");
+            AnsiConsole.MarkupLine($"[red]Unable to read file: app-config for {Configuration.ServiceName}[/]");
             return;
         }
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(appConfigPath, updatedAppConfigJson);
-        Console.WriteLine($"Updated app-config for {Configuration.ServiceName}");
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
     
     protected virtual void UpdateAppSettings(RunState state)
@@ -124,7 +128,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         if (!File.Exists(appSettingsPath))
         {
-            Console.Error.WriteLine($"File not found: appsettings.json for {Configuration.ServiceName}");
+            AnsiConsole.MarkupLine($"[red]File not found: appsettings.json for {Configuration.ServiceName}[/]");
             return;
         }
 
@@ -133,7 +137,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         if (appSettings == null)
         {
-            Console.Error.WriteLine($"Unable to read file: appsettings.json for {Configuration.ServiceName}");
+            AnsiConsole.MarkupLine($"[red]Unable to read file: appsettings.json for {Configuration.ServiceName}[/]");
             return;
         }
         
@@ -141,7 +145,5 @@ public abstract class ServiceRunner<T> : ComponentRunner
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
         File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
-        
-        Console.WriteLine($"Updated appsettings.json for {Configuration.ServiceName}");
     }
 }

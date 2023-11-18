@@ -5,20 +5,20 @@ using Spectre.Console.Cli;
 
 namespace Nexus.Commands;
 
-public sealed class InitCommand : AsyncCommand<InitCommand.Settings>
+public sealed class InitSettings : CommandSettings
 {
-    public sealed class Settings : CommandSettings
-    {
-        [Description("Solution Name")]
-        [CommandArgument(0, "<name>")]
-        public string Name { get; init; }
+    [Description("Solution Name")]
+    [CommandArgument(0, "<name>")]
+    public string Name { get; init; } = string.Empty;
         
-        [Description("Include source code for libraries")]
-        [CommandOption("--include-library-source")]
-        public bool? IncludeLibrarySource { get; init; }
-    }
+    [Description("Include source code for libraries")]
+    [CommandOption("--include-library-source")]
+    public bool? IncludeLibrarySource { get; init; }
+}
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+public sealed class InitCommand : AsyncCommand<InitSettings>
+{
+    public override async Task<int> ExecuteAsync(CommandContext context, InitSettings settings)
     {
         AnsiConsole.MarkupLine("[bold]Initializing Solution[/]");
         SolutionGenerator solutionGenerator = new();

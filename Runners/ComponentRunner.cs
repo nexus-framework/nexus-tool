@@ -1,6 +1,6 @@
 using Nexus.Config;
 using Nexus.Models;
-using Pastel;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -8,11 +8,13 @@ public abstract class ComponentRunner
 {
     protected readonly RunType RunType;
     protected readonly ConfigurationService ConfigurationService;
+    protected readonly ProgressContext Context;
 
-    protected ComponentRunner(ConfigurationService configurationService, RunType runType)
+    protected ComponentRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
     {
         ConfigurationService = configurationService;
         RunType = runType;
+        Context = context;
     }
     
     private ComponentRunner? Next { get; set; }
@@ -25,12 +27,10 @@ public abstract class ComponentRunner
     
     public RunState Start(RunState state)
     {
-        Console.WriteLine($"{"Starting".Pastel(Constants.Colors.Default)} {DisplayName.Pastel(Constants.Colors.Info)}");
         RunState updatedState = OnExecuted(state);
 
         if (state.LastStepStatus == StepStatus.Failure)
         {
-            Console.WriteLine($"{DisplayName.Pastel(Constants.Colors.Info)}{" failed. Aborting".Pastel(Constants.Colors.Error)}");
             return updatedState;
         }
 
@@ -39,13 +39,17 @@ public abstract class ComponentRunner
             return updatedState;
         }
 
-        Console.WriteLine("**************************************************\n\n");
         return Next.Start(updatedState);
     }
     
     protected abstract RunState OnExecuted(RunState state);
 
     protected abstract string DisplayName { get; }
+
+    protected void AddError(string error, RunState state)
+    {
+        state.Errors.Add($"Error in {DisplayName}: {error}");
+    }
 }
 
 public class RunState
@@ -72,6 +76,7 @@ public class RunState
 
     public Dictionary<string, string> ServiceTokens = new ();
 
+    public List<string> Errors { get; set; } = new ();
 }
 
 public enum StepStatus

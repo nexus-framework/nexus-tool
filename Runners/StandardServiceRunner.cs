@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Services;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -11,14 +12,13 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         ConfigurationService configurationService,
         NexusServiceConfiguration configuration,
         RunType runType,
-        ConsulApiService consulApiService)
-        : base(configurationService, configuration, runType, consulApiService)
+        ConsulApiService consulApiService, ProgressContext context)
+        : base(configurationService, configuration, runType, consulApiService, context)
     {
     }
 
     protected override void UpdateAppConfig(RunState state)
     {
-        Console.WriteLine($"Updating app-config for {Configuration.ServiceName}");
         string appConfigPath = Path.Combine(
             ConfigurationService.GetBasePath(),
             ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName),
@@ -26,7 +26,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
 
         if (!File.Exists(appConfigPath))
         {
-            Console.Error.WriteLine($"File not found: app-config for {Configuration.ServiceName}");
+            AddError($"File not found: app-config for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -35,7 +35,7 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
 
         if (appConfig == null)
         {
-            Console.Error.WriteLine($"Unable to read file: app-config for {Configuration.ServiceName}");
+            AddError($"Unable to read file: app-config for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -43,11 +43,9 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(appConfigPath, updatedAppConfigJson, Encoding.UTF8);
-        Console.WriteLine($"Updated app-config for {Configuration.ServiceName}");
 
         // Create KV
         ConsulApiService.UploadKv(Configuration.ServiceName, updatedAppConfigJson, state.GlobalToken);
-        Console.WriteLine($"Pushed updated config for {Configuration.ServiceName} to Consul KV");
     }
 
     private void ModifyAppConfig(dynamic appConfig, RunState state, string serviceName)
@@ -57,5 +55,5 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
 
-    protected override string DisplayName => $"{Configuration.ServiceName} runner";
+    protected override string DisplayName => $"{Configuration.ServiceName} Runner";
 }

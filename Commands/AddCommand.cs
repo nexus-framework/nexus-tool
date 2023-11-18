@@ -7,11 +7,11 @@ namespace Nexus.Commands;
 public class AddSettings : CommandSettings
 {
 }
-    
+
 public class AddServiceSettings : AddSettings
 {
-    [CommandArgument(0, "<name>")]
-    public string Name { get; init; }
+    [CommandArgument(0, "<name>")] 
+    public string Name { get; init; } = string.Empty;
 }
 
 public class AddServiceCommand : AsyncCommand<AddServiceSettings>

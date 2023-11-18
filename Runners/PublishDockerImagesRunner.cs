@@ -1,4 +1,5 @@
 using Nexus.Config;
+using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
@@ -11,38 +12,55 @@ public class PublishDockerImagesRunner : ComponentRunner
         "api-gateway",
         "health-checks-dashboard",
     };
-    public PublishDockerImagesRunner(ConfigurationService configurationService, RunType runType) : base(configurationService, runType)
+    public PublishDockerImagesRunner(
+        ConfigurationService configurationService,
+        RunType runType, 
+        ProgressContext context) : base(configurationService, runType, context)
     {
     }
 
     protected override RunState OnExecuted(RunState state)
     {
+        ProgressTask progressTask = Context.AddTask("Publishing Docker Images");
         NexusSolutionConfiguration? config = ConfigurationService.ReadConfiguration();
 
         if (config == null)
         {
             state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
+            AddError("Nexus config not found", state);
             return state;
         }
-        
-        Console.WriteLine($"Publishing docker images for version {state.DockerImageVersion}");
+        progressTask.Increment(10);
         
         IEnumerable<string> allServices = _defaultServices.Concat(config.Services.Select(x => x.ServiceName));
-        IEnumerable<string> imageNames = allServices.Select(x => $"{config.SolutionName}-{x}");
-        IEnumerable<string> commands = imageNames.SelectMany(service => new string[]
-        {
-            $"push {config.DockerRepository}/{service}:{state.DockerImageVersion}",
-            $"push {config.DockerRepository}/{service}:latest",
-        });
+        List<string> imageNames = allServices.Select(x => $"{config.SolutionName}-{x}").ToList();
 
-        foreach (string command in commands)
+        Dictionary<string, string[]> serviceCommands = imageNames.Select(
+            service =>
+            {
+                string[] sc = new string[]
+                {
+                    $"push {config.DockerRepository}/{service}:{state.DockerImageVersion}",
+                    $"push {config.DockerRepository}/{service}:latest",
+                };
+                return new KeyValuePair<string, string[]>(service, sc);
+            }
+        ).ToDictionary(pair => pair.Key, pair => pair.Value);
+        
+        foreach (KeyValuePair<string, string[]> serviceCommand in serviceCommands)
         {
-            RunDockerCommand(command, captureOutput: false);
+            progressTask.Description($"Publishing Docker Images: {serviceCommand.Key}");
+            foreach (string command in serviceCommand.Value)
+            {
+                RunDockerCommand(command);
+            }
+            progressTask.Increment((double)1/serviceCommands.Count * 80);
         }
         
-        Console.WriteLine($"Published docker images for version {state.DockerImageVersion}");
-
         state.LastStepStatus = StepStatus.Success;
+        progressTask.Increment(100);
+        progressTask.StopTask();
         return state;
     }
 

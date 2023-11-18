@@ -1,6 +1,6 @@
 using Nexus.Config;
 using Nexus.Services;
-using Pastel;
+using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
@@ -20,128 +20,183 @@ internal class NexusRunner
             devCertsPassword: "dev123");
     }
 
-    public int RunLocal()
+    public bool RunLocal()
     {
-        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+        bool result = AnsiConsole
+            .Progress()
+            .AutoClear(false)
+            .HideCompleted(false)
+            .Columns(new ProgressColumn[]
+            {
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new ElapsedTimeColumn(),
+                new SpinnerColumn(),
+            })
+            .Start(context =>
+            {
+                NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+                if (config == null)
+                {
+                    AnsiConsole.MarkupLine("[red]Unable to read configuration[/]");
+                    return false;
+                }
 
-        if (config == null)
+                RunType runType = RunType.Local;
+                
+                GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType, context);
+                InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType, context);
+                DevCertsRunner devCertsRunner = new (_configurationService, runType, context);
+                DiscoveryServerRunner discoveryServerRunner = new (_configurationService, runType, context);
+                ApiGatewayRunner apiGatewayRunner = new (_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
+                HealthChecksDashboardRunner healthChecksDashboardRunner =
+                    new (_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
+
+                List<StandardServiceRunner> runners = new ();
+                foreach (NexusServiceConfiguration? configuration in config.Services)
+                {
+                    StandardServiceRunner? runner = new (_configurationService, configuration, runType, _consulApiService, context);
+                    runners.Add(runner);
+                }
+
+                for (int i = 0; i < runners.Count-1; i++)
+                {
+                    runners[i].AddNextRunner(runners[i + 1]);
+                }
+
+                ConsulGlobalConfigRunner consulGlobalConfigRunner = new (_configurationService, _consulApiService, runType, context);
+                EnvironmentUpdateRunner environmentUpdateRunner = new (_configurationService, runType, context);
+                DockerComposeRunner dockerComposeRunner = new (_configurationService, runType, context);
+                
+                runners.Last()
+                    .AddNextRunner(consulGlobalConfigRunner)
+                    .AddNextRunner(environmentUpdateRunner)
+                    .AddNextRunner(dockerComposeRunner);
+                
+                globalAppSettingsRunner
+                    .AddNextRunner(initializeDockerRunner)
+                    .AddNextRunner(devCertsRunner)
+                    .AddNextRunner(discoveryServerRunner)
+                    .AddNextRunner(apiGatewayRunner)
+                    .AddNextRunner(healthChecksDashboardRunner)
+                    .AddNextRunner(runners[0]);
+                
+                _state = globalAppSettingsRunner.Start(_state);
+
+                if (_state.LastStepStatus == StepStatus.Success)
+                {
+                    return true;
+                }
+                
+                return false;
+            });
+
+        if (result)
         {
-            return 1;
-        }
-
-        RunType runType = RunType.Local;
-        
-        GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType);
-        InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType);
-        DevCertsRunner devCertsRunner = new (_configurationService, runType);
-        DiscoveryServerRunner discoveryServerRunner = new (_configurationService, runType);
-        ApiGatewayRunner apiGatewayRunner = new (_configurationService, config.Framework.ApiGateway, runType, _consulApiService);
-        HealthChecksDashboardRunner healthChecksDashboardRunner =
-            new (_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService);
-
-        List<StandardServiceRunner> runners = new ();
-        foreach (NexusServiceConfiguration? configuration in config.Services)
-        {
-            StandardServiceRunner? runner = new (_configurationService, configuration, runType, _consulApiService);
-            runners.Add(runner);
-        }
-
-        for (int i = 0; i < runners.Count-1; i++)
-        {
-            runners[i].AddNextRunner(runners[i + 1]);
-        }
-
-        ConsulGlobalConfigRunner consulGlobalConfigRunner = new (_configurationService, _consulApiService, runType);
-        EnvironmentUpdateRunner environmentUpdateRunner = new (_configurationService, runType);
-        DockerComposeRunner dockerComposeRunner = new (_configurationService, runType);
-        
-        runners.Last()
-            .AddNextRunner(consulGlobalConfigRunner)
-            .AddNextRunner(environmentUpdateRunner)
-            .AddNextRunner(dockerComposeRunner);
-        
-        globalAppSettingsRunner
-            .AddNextRunner(initializeDockerRunner)
-            .AddNextRunner(devCertsRunner)
-            .AddNextRunner(discoveryServerRunner)
-            .AddNextRunner(apiGatewayRunner)
-            .AddNextRunner(healthChecksDashboardRunner)
-            .AddNextRunner(runners[0]);
-        
-        _state = globalAppSettingsRunner.Start(_state);
-
-        if (_state.LastStepStatus == StepStatus.Success)
-        {
-            Console.WriteLine("Development Environment Setup Successfully");
+            AnsiConsole.MarkupLine("[green]Development Environment Setup Successfully[/]");
             PrintState(_state);
-            return 0;
+            PrintVersion(_state);
+            return true;
         }
         
-        Console.WriteLine("There were some errors setting up the development environment".Pastel(Constants.Colors.Error));
-        return 1;
+        foreach (string error in _state.Errors)
+        {
+            AnsiConsole.MarkupLine($"[red]{error}[/]");
+        }
+        return false;
     }
 
-    public int RunDocker()
+    public bool RunDocker()
     {
-        NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
+        bool result = AnsiConsole
+            .Progress()
+            .AutoClear(false)
+            .HideCompleted(false)
+            .Columns(new ProgressColumn[]
+            {
+                new TaskDescriptionColumn()
+                {
+                    Alignment = Justify.Left,
+                },
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new ElapsedTimeColumn(),
+                new SpinnerColumn(Spinner.Known.Dots),
+            })
+            .Start(context =>
+            {
+                NexusSolutionConfiguration? config = _configurationService.ReadConfiguration();
 
-        if (config == null)
-        {
-            return 1;
-        }
+                if (config == null)
+                {
+                    return false;
+                }
 
-        RunType runType = RunType.Docker;
+                RunType runType = RunType.Docker;
+
+                GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
+                InitializeDockerRunner initializeDockerRunner = new(_configurationService, runType, context);
+                DevCertsRunner devCertsRunner = new(_configurationService, runType, context);
+                BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
+                DiscoveryServerRunner discoveryServerRunner = new(_configurationService, runType, context);
+
+                ApiGatewayRunner apiGatewayRunner = new(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
+                HealthChecksDashboardRunner healthChecksDashboardRunner = new(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
+
+                List<StandardServiceRunner> runners = new();
+                foreach (NexusServiceConfiguration? configuration in config.Services)
+                {
+                    StandardServiceRunner runner = new(_configurationService, configuration, runType, _consulApiService, context);
+                    runners.Add(runner);
+                }
+
+                for (int i = 0; i < runners.Count - 1; i++)
+                {
+                    runners[i].AddNextRunner(runners[i + 1]);
+                }
+
+                ConsulGlobalConfigRunner consulGlobalConfigRunner =
+                    new(_configurationService, _consulApiService, runType, context);
+                EnvironmentUpdateRunner environmentUpdateRunner = new(_configurationService, runType, context);
+                DockerComposeRunner dockerComposeRunner = new(_configurationService, runType, context);
+
+                runners.Last()
+                    .AddNextRunner(consulGlobalConfigRunner)
+                    .AddNextRunner(environmentUpdateRunner)
+                    .AddNextRunner(dockerComposeRunner);
+
+                globalAppSettingsRunner
+                    .AddNextRunner(initializeDockerRunner)
+                    .AddNextRunner(devCertsRunner)
+                    .AddNextRunner(buildDockerImagesRunner)
+                    .AddNextRunner(discoveryServerRunner)
+                    .AddNextRunner(apiGatewayRunner)
+                    .AddNextRunner(healthChecksDashboardRunner)
+                    .AddNextRunner(runners[0]);
+
+                _state = globalAppSettingsRunner.Start(_state);
+
+                if (_state.LastStepStatus == StepStatus.Success)
+                {
+                    return true;
+                }
+
+                return false;
+            });
         
-        GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType);
-        InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType);
-        DevCertsRunner devCertsRunner = new (_configurationService, runType);
-        BuildDockerImagesRunner buildDockerImagesRunner = new (_configurationService, runType);
-        DiscoveryServerRunner discoveryServerRunner = new (_configurationService, runType);
-        
-        ApiGatewayRunner apiGatewayRunner = new (_configurationService, config.Framework.ApiGateway, runType, _consulApiService);
-        HealthChecksDashboardRunner healthChecksDashboardRunner =
-            new (_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService);
-
-        List<StandardServiceRunner> runners = new ();
-        foreach (NexusServiceConfiguration? configuration in config.Services)
+        if (result)
         {
-            StandardServiceRunner runner = new (_configurationService, configuration, runType, _consulApiService);
-            runners.Add(runner);
-        }
-
-        for (int i = 0; i < runners.Count-1; i++)
-        {
-            runners[i].AddNextRunner(runners[i + 1]);
-        }
-
-        ConsulGlobalConfigRunner consulGlobalConfigRunner = new (_configurationService, _consulApiService, runType);
-        EnvironmentUpdateRunner environmentUpdateRunner = new (_configurationService, runType);      
-        DockerComposeRunner dockerComposeRunner = new (_configurationService, runType);
-
-        runners.Last()
-            .AddNextRunner(consulGlobalConfigRunner)
-            .AddNextRunner(environmentUpdateRunner)
-            .AddNextRunner(dockerComposeRunner);
-        
-        globalAppSettingsRunner
-            .AddNextRunner(initializeDockerRunner)
-            .AddNextRunner(devCertsRunner)
-            .AddNextRunner(buildDockerImagesRunner)
-            .AddNextRunner(discoveryServerRunner)
-            .AddNextRunner(apiGatewayRunner)
-            .AddNextRunner(healthChecksDashboardRunner)
-            .AddNextRunner(runners[0]);
-        
-        _state = globalAppSettingsRunner.Start(_state);
-
-        if (_state.LastStepStatus == StepStatus.Success)
-        {
-            Console.WriteLine("Development Environment Setup Successfully");
+            AnsiConsole.MarkupLine("[green]Development Environment Setup Successfully[/]");
             PrintState(_state);
-            return 0;
+            PrintVersion(_state);
+            return true;
         }
         
-        Console.WriteLine("There were some errors setting up the development environment".Pastel(Constants.Colors.Error));
-        return 1;
+        foreach (string error in _state.Errors)
+        {
+            AnsiConsole.MarkupLine($"[red]{error}[/]");
+        }
+        return false;
     }
 }

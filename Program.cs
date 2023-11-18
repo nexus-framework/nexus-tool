@@ -25,53 +25,34 @@ public class Program
                 options.AddCommand<AddServiceCommand>("service")
                     .WithDescription("Add a new service");
             });
+            
+            config.AddBranch<RunSetings>("run", options =>
+            {
+                options.AddCommand<RunLocalCommand>("local")
+                    .WithDescription("Run local development environment");
+                options.AddCommand<RunDockerCommand>("docker")
+                    .WithDescription("Run Docker development environment");
+            });
+            
+            config.AddBranch<CleanSettings>("clean", options =>
+            {
+                options.AddCommand<CleanLocalCommand>("local")
+                    .WithDescription("Clean up local development environment");
+                options.AddCommand<CleanDockerCommand>("docker")
+                    .WithDescription("Clean up Docker development environment");
+            });
+            
+            config.AddBranch<DockerSettings>("docker", options =>
+            {
+                options.AddCommand<DockerBuildCommand>("build")
+                    .WithDescription("Build docker images for services");
+                options.AddCommand<DockerPublishCommand>("publish")
+                    .WithDescription("Publish docker images for services");
+            });
 
-            // config.AddCommand<RunCommand>("run")
-            //     .WithDescription("Run development environment");
-            //
-            // config.AddCommand<CleanCommand>("clean")
-            //     .WithDescription("Clean up the dev environment");
-            //
-            // config.AddCommand<DockerCommand>("docker")
-            //     .WithDescription("Docker specific commands");
         });
         
         app.Run(args);
     }
-    // public static void Main(string[] args)
-    // {
-    //     Console.WriteLine(Constants.NexusLogo.Pastel(Constants.Colors.Info));
-    //
-    //     CoconaAppBuilder builder = CoconaApp.CreateBuilder();
-    //     CoconaApp app = builder.Build();
-    //     app.AddSubCommand("run", x =>
-    //         {
-    //             x.AddCommand("local", Commands.RunLocal).WithDescription("Run local development environment");
-    //             x.AddCommand("docker", Commands.RunDocker).WithDescription("Run docker development environment");
-    //         })
-    //         .WithDescription("Run development environment");
-    //
-    //     app.AddSubCommand("clean", options =>
-    //         {
-    //             options.AddCommand("local", Commands.CleanLocal)
-    //                 .WithDescription("Clean up the local dev environment");
-    //
-    //             options.AddCommand("docker", Commands.CleanDocker)
-    //                 .WithDescription("Clean up the docker dev environment");
-    //         })
-    //         .WithDescription("Clean up the dev environment");
-    //
-    //     app.AddSubCommand("docker", options =>
-    //         {
-    //             options.AddCommand("build", Commands.DockerBuild)
-    //                 .WithDescription("Build docker images for services");
-    //
-    //             options.AddCommand("publish", Commands.DockerPublish)
-    //                 .WithDescription("Publish docker images for services");
-    //         })
-    //         .WithDescription("Docker specific commands");
-    //
-    //     app.Run();       
-    // }
 }
 

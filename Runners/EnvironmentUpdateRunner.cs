@@ -1,5 +1,6 @@
 ﻿using CaseExtensions;
 using Nexus.Config;
+using Spectre.Console;
 
 namespace Nexus.Runners;
 
@@ -7,29 +8,36 @@ public class EnvironmentUpdateRunner : ComponentRunner
 {
     public EnvironmentUpdateRunner(
         ConfigurationService configurationService,
-        RunType runType) 
-        : base(configurationService, runType)
+        RunType runType,
+        ProgressContext context) 
+        : base(configurationService, runType, context)
     {
     }
 
     protected override RunState OnExecuted(RunState state)
     {
-        Console.WriteLine("Updating .env file");
+        ProgressTask progressTask = Context.AddTask("Updating environment variables");
         NexusSolutionConfiguration? config = ConfigurationService.ReadConfiguration();
 
         if (config == null)
         {
+            AddError("Unable to read configuration", state);
+            progressTask.StopTask();
             state.LastStepStatus = StepStatus.Failure;
             return state;
         }
+        progressTask.Increment(25);
 
         string envFilePath = Path.Combine(ConfigurationService.GetBasePath(), ".env");
 
         if (!File.Exists(envFilePath))
         {
+            AddError("Unable to find .env file", state);
+            progressTask.StopTask();
             state.LastStepStatus = StepStatus.Failure;
             return state;
         }
+        progressTask.Increment(25);
 
         string[] lines = File.ReadAllLines(envFilePath);
         
@@ -46,7 +54,9 @@ public class EnvironmentUpdateRunner : ComponentRunner
             }
         }
         File.WriteAllLines(envFilePath, lines);
-
+        
+        progressTask.Increment(50);
+        progressTask.StopTask();
         state.LastStepStatus = StepStatus.Success;
         return state;
     }

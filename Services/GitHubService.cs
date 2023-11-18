@@ -24,7 +24,6 @@ public class GitHubService
             }
 
             // download files to temp
-            //Console.WriteLine("Downloading service template");
             using (HttpClient? client = new ())
             {
                 HttpResponseMessage? response = await client.GetAsync(ServiceTemplateUrl);
@@ -44,10 +43,8 @@ public class GitHubService
                     }
                 }
             }
-            //Console.WriteLine("Download complete");
 
             // Extract files
-            //Console.WriteLine("Extracting service");
             if (File.Exists(downloadFilePath))
             {
                 if (!Directory.Exists(extractPath))
@@ -61,9 +58,8 @@ public class GitHubService
             // move files to dest
             CopyDirectory(templateSourcePath, destPath, true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            //Console.WriteLine(ex);
         }
         finally
         {
@@ -90,7 +86,6 @@ public class GitHubService
             }
 
             // download files to temp
-            //Console.WriteLine("Downloading solution template");
             using (HttpClient? client = new ())
             {
                 HttpResponseMessage? response = await client.GetAsync(SolutionTemplateUrl, cancellationToken);
@@ -110,10 +105,8 @@ public class GitHubService
                     }
                 }
             }
-            //Console.WriteLine("Download complete");
 
             // Extract files
-            //Console.WriteLine("Extracting solution");
             if (File.Exists(downloadFilePath))
             {
                 if (!Directory.Exists(extractPath))
@@ -127,16 +120,14 @@ public class GitHubService
             // move files to dest
             CopyDirectory(templateSourcePath, solutionDirectory, true);
 
-            //Console.WriteLine("Updating config");
             string solutionFileSourcePath = Path.Combine(solutionDirectory, "nexus.sln");
             string solutionFileDestPath = Path.Combine(solutionDirectory, $"{solutionName}.sln");
             File.Move(solutionFileSourcePath, solutionFileDestPath);
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            //Console.WriteLine(ex);
             return false;
         }
         finally
@@ -197,7 +188,6 @@ public class GitHubService
             }
 
             // download files to temp
-            //Console.WriteLine("Downloading libraries");
             using (HttpClient? client = new ())
             {
                 HttpResponseMessage? response = await client.GetAsync(LibrariesUrl);
@@ -217,10 +207,8 @@ public class GitHubService
                     }
                 }
             }
-            //Console.WriteLine("Download complete");
 
             // Extract files
-            //Console.WriteLine("Extracting libraries");
             if (File.Exists(downloadFilePath))
             {
                 if (!Directory.Exists(extractPath))
@@ -234,9 +222,8 @@ public class GitHubService
             // move files to dest
             CopyDirectory(templateSourcePath, destPath, true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            //Console.WriteLine(ex);
         }
         finally
         {
