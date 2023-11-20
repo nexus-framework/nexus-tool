@@ -7,30 +7,41 @@ namespace Nexus.Config;
 
 public class ConfigurationService
 {
-    //public string GetBasePath() => @"C:\source\dotnet\temp";
-    public string GetBasePath() => Directory.GetCurrentDirectory();
+    public string GetBasePath() => @"C:\source\dotnet\temp";
+    //public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
         return Path.Combine(GetBasePath(), "nexus.config.json");
     }
 
-    public string ApiGatewayDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway");
+    public string ApiGatewayDirectory => Path.Combine(GetBasePath(), "api-gateway", "src", "Nexus.ApiGateway");
     public string ApiGatewayDockerfile => Path.Combine(ApiGatewayDirectory, "Dockerfile");
     public string ApiGatewayOcelotDirectory => Path.Combine(ApiGatewayDirectory, "Ocelot");
     public string ApiGatewayAppSettingsFile => Path.Combine(ApiGatewayDirectory, "appsettings.json");
     public string ApiGatewayConsulDirectory => Path.Combine(ApiGatewayDirectory, "Consul");
+    public string ApiGatewayKubernetesDirectory => Path.Combine(GetBasePath(), "api-gateway", "k8s");
+    public string ApiGatewayKubernetesPolicyFile => Path.Combine(ApiGatewayKubernetesDirectory, "policies.yaml");
     public string ApiGatewayCsProjFile => Path.Combine(ApiGatewayDirectory, "Nexus.ApiGateway.csproj");
-    public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard\src\Nexus.HealthChecksDashboard");
+    public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), "health-checks-dashboard", "src", "Nexus.HealthChecksDashboard");
     public string HealthChecksDashboardDockerfile => Path.Combine(HealthChecksDashboardDirectory, "Dockerfile");
     public string HealthChecksDashboardConsulDirectory => Path.Combine(HealthChecksDashboardDirectory, "Consul");
     public string HealthChecksDashboardAppSettingsFile => Path.Combine(HealthChecksDashboardDirectory, "appsettings.json");
     public string HealthChecksDashboardCsProjFile => Path.Combine(HealthChecksDashboardDirectory, "Nexus.HealthChecksDashboard.csproj");
-    public string FrontEndAppDirectory => Path.Combine(GetBasePath(), @"frontend-app");
+    public string HealthChecksDashboardKubernetesDirectory => Path.Combine(GetBasePath(), "health-checks-dashboard", "k8s");
+    public string HealthChecksDashboardKubernetesPolicyFile => Path.Combine(HealthChecksDashboardKubernetesDirectory, "policies.yaml");
+    public string FrontEndAppDirectory => Path.Combine(GetBasePath(), "frontend-app");
 
-    public string DiscoveryServerConfigFolder => Path.Combine(GetBasePath(), @"discovery-server\docker\");
+    public string DiscoveryServerConfigFolder => Path.Combine(GetBasePath(), "discovery-server", "docker");
     public string DiscoveryServerDockerCompose => Path.Combine(DiscoveryServerConfigFolder, "docker-compose.yml");
     public string DiscoveryServerAcl => Path.Combine(DiscoveryServerConfigFolder, "consul-acl.json");
+    
+    public string KuberetesDirectory => Path.Combine(GetBasePath(), "k8s");
+    public string KuberetesConsulFile => Path.Combine(KuberetesDirectory, "consul.yaml");
+    
+    public string KuberetesPrometheusFile => Path.Combine(KuberetesDirectory, "prometheus.yaml");
+    public string KubernetesElasticFile => Path.Combine(KuberetesDirectory, "elastic.yaml");
+    public string KubernetesGrafanaFile => Path.Combine(KuberetesDirectory, "grafana.yaml");
 
     public string GetServiceConsulDirectory(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
@@ -43,6 +54,9 @@ public class ConfigurationService
     
     public string GetServiceDockerfile(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, $"Dockerfile");
+    
+    public string GetServiceKubernetesPolicy(string serviceName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "src", "k8s", "policies.yaml");
 
     public string GetDockerComposePath(RunType runType)
         => runType switch 
@@ -63,6 +77,7 @@ public class ConfigurationService
     {
         RunType.Local => $"http://{GetConsulHost(runType)}:8500",
         RunType.Docker => $"http://{GetConsulHost(runType)}:8500",
+        RunType.K8s => $"http://{GetConsulHost(runType)}:8500",
         _ => "",
     };
     
@@ -70,6 +85,7 @@ public class ConfigurationService
     {
         RunType.Local => "localhost",
         RunType.Docker => "consul-server1",
+        RunType.K8s => "consul.nexus.svc.cluster.local",
         _ => "",
     };
     
@@ -200,4 +216,5 @@ public class ConfigurationService
 
         return config.Services.Where(x => x.DbPort.HasValue).Select(x => x.DbPort).Max() + 2 ?? 5438;
     }
+
 }

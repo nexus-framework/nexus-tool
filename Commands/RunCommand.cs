@@ -11,11 +11,15 @@ public class RunSetings : CommandSettings
 {
 }
 
-public class RunLocalSettings: RunSetings
+public class RunLocalSettings : RunSetings
 {
 }
 
-public class RunDockerSettings: RunSetings
+public class RunDockerSettings : RunSetings
+{
+}
+
+public class RunKubernetesSettings : RunSetings
 {
 }
 
@@ -44,12 +48,33 @@ public class RunDockerCommand : Command<RunDockerSettings>
 {
     public override int Execute([NotNull]CommandContext context, [NotNull]RunDockerSettings settings)
     {
-        AnsiConsole.MarkupLine($"[bold]Running Local Environment[/]");
+        AnsiConsole.MarkupLine($"[bold]Running Docker Environment[/]");
         
         ConfigurationService configurationService = new();
         ConsulApiService consulApiService = new();
         NexusRunner runner = new(configurationService, consulApiService);
         bool result = runner.RunDocker();
+        if (result)
+        {
+            AnsiConsole.MarkupLine("[green]Done[/]");
+            return 0;
+        }
+
+        AnsiConsole.MarkupLine("[red]Completed with errors[/]");
+        return 1;
+    }
+}
+
+public class RunKubernetesCommand : Command<RunKubernetesSettings>
+{
+    public override int Execute([NotNull]CommandContext context, [NotNull]RunKubernetesSettings settings)
+    {
+        AnsiConsole.MarkupLine($"[bold]Running Kubernetes Environment[/]");
+        
+        ConfigurationService configurationService = new();
+        ConsulApiService consulApiService = new();
+        NexusRunner runner = new(configurationService, consulApiService);
+        bool result = runner.RunKubernetes();
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Done[/]");

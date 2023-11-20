@@ -19,6 +19,10 @@ public class CleanDockerSettings : CleanSettings
 {
 }
 
+public class CleanKubernetesSettings : CleanSettings
+{
+}
+
 public class CleanLocalCommand : Command<CleanLocalSettings>
 {
     public override int Execute([NotNull]CommandContext context, [NotNull]CleanLocalSettings settings)
@@ -46,6 +50,25 @@ public class CleanDockerCommand : Command<CleanDockerSettings>
         ConfigurationService configurationService = new();
         CleanupService cleanupService = new(configurationService);
         bool result = cleanupService.Cleanup(RunType.Docker);
+        if (result)
+        {
+            AnsiConsole.MarkupLine("[green]Done[/]");
+            return 0;
+        }
+
+        AnsiConsole.MarkupLine("[red]Completed with errors[/]");
+        return 1;
+    }
+}
+
+public class CleanKubernetesCommand : Command<CleanKubernetesSettings>
+{
+    public override int Execute([NotNull]CommandContext context, [NotNull]CleanKubernetesSettings settings)
+    {
+        AnsiConsole.MarkupLine($"[bold]Cleaning up Kubernetes development environment[/]");
+        ConfigurationService configurationService = new();
+        CleanupService cleanupService = new(configurationService);
+        bool result = cleanupService.Cleanup(RunType.K8s);
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Done[/]");
