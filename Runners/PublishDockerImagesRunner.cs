@@ -59,6 +59,7 @@ public class PublishDockerImagesRunner : ComponentRunner
         }
         
         state.LastStepStatus = StepStatus.Success;
+        progressTask.Description("Publishing Docker Images");
         progressTask.Increment(100);
         progressTask.StopTask();
         return state;

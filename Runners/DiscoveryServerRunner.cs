@@ -7,9 +7,19 @@ using static Nexus.Extensions.ConsoleUtilities;
 
 namespace Nexus.Runners;
 
-public class DiscoveryServerRunner : ComponentRunner
+public abstract class DiscoveryServerRunner : ComponentRunner
 {
-    public DiscoveryServerRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
+    protected DiscoveryServerRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
+        : base(configurationService, runType, context)
+    {
+    }
+
+    protected override string DisplayName => "Discovery Service Runner";
+}
+
+public class DockerDiscoveryServerRunner : DiscoveryServerRunner
+{
+    public DockerDiscoveryServerRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
         : base(configurationService, runType, context)
     {
     }
@@ -17,6 +27,7 @@ public class DiscoveryServerRunner : ComponentRunner
     protected override RunState OnExecuted(RunState state)
     {
         ProgressTask progressTask = Context.AddTask("Starting Discovery Server");
+        
         string configFolder = ConfigurationService.DiscoveryServerConfigFolder;
         string[] files = Directory.GetFiles(configFolder, "server*.json");
         
@@ -107,7 +118,7 @@ public class DiscoveryServerRunner : ComponentRunner
         return state;
     }
 
-    protected override string DisplayName => "Discovery Service Runner";
+    
 
     private void ReplaceSubnetIpInConsulServerConfig(string[] files, string subnetIp)
     {
@@ -134,5 +145,37 @@ public class DiscoveryServerRunner : ComponentRunner
 
             File.WriteAllText(file, updatedJson);
         }
+    }
+}
+
+public class KubernetesDiscoveryServerRunner : DockerDiscoveryServerRunner
+{
+    public KubernetesDiscoveryServerRunner(ConfigurationService configurationService, RunType runType, ProgressContext context)
+        : base(configurationService, runType, context)
+    {
+    }
+
+    protected override RunState OnExecuted(RunState state)
+    {
+        ProgressTask progressTask = Context.AddTask("Starting Discovery Server");
+
+        string consulYaml = ConfigurationService.KuberetesConsulFile;
+
+        if (!File.Exists(consulYaml))
+        {
+            AddError($"File not found: {consulYaml}", state);
+            state.LastStepStatus = StepStatus.Failure;
+            progressTask.StopTask();
+            return state;
+        }
+        progressTask.Increment(10);
+
+        RunPowershellCommand($""" kubectl apply -f "{consulYaml}" """);
+        state.GlobalToken = "dev123";
+        
+        progressTask.Increment(100);
+        progressTask.StopTask();
+        state.LastStepStatus = StepStatus.Success;
+        return state;
     }
 }
