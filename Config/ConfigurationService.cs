@@ -22,6 +22,7 @@ public class ConfigurationService
     public string ApiGatewayConsulDirectory => Path.Combine(ApiGatewayDirectory, "Consul");
     public string ApiGatewayKubernetesDirectory => Path.Combine(GetBasePath(), "api-gateway", "k8s");
     public string ApiGatewayKubernetesPolicyFile => Path.Combine(ApiGatewayKubernetesDirectory, "policies.yaml");
+    public string ApiGatewayKubernetesServiceFile => Path.Combine(ApiGatewayKubernetesDirectory, "service.yaml");
     public string ApiGatewayCsProjFile => Path.Combine(ApiGatewayDirectory, "Nexus.ApiGateway.csproj");
     public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), "health-checks-dashboard", "src", "Nexus.HealthChecksDashboard");
     public string HealthChecksDashboardDockerfile => Path.Combine(HealthChecksDashboardDirectory, "Dockerfile");
@@ -70,6 +71,7 @@ public class ConfigurationService
     {
         RunType.Local => "http://localhost:4317",
         RunType.Docker => "http://jaeger:4317",
+        RunType.K8s => "http://jaeger.nexus.svc.cluster.local:4317",
         _ => "",
     };
     
@@ -93,6 +95,7 @@ public class ConfigurationService
     {
         RunType.Local => "https://localhost:9200",
         RunType.Docker => "https://es01:9200",
+        RunType.K8s => "https://elastic.nexus.svc.cluster.local:9200",
         _ => "",
     };
 

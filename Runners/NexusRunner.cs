@@ -48,8 +48,8 @@ internal class NexusRunner
                 GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType, context);
                 InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType, context);
                 DevCertsRunner devCertsRunner = new (_configurationService, runType, context);
-                DockerDiscoveryServerRunner dockerDiscoveryServerRunner = new (_configurationService, runType, context);
-                ApiGatewayRunner apiGatewayRunner = new (_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
+                DiscoveryServerRunner dockerDiscoveryServerRunner = new DockerDiscoveryServerRunner(_configurationService, runType, context);
+                ApiGatewayRunner dockerApiGatewayRunner = new DockerApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 HealthChecksDashboardRunner healthChecksDashboardRunner =
                     new (_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
 
@@ -78,7 +78,7 @@ internal class NexusRunner
                     .AddNextRunner(initializeDockerRunner)
                     .AddNextRunner(devCertsRunner)
                     .AddNextRunner(dockerDiscoveryServerRunner)
-                    .AddNextRunner(apiGatewayRunner)
+                    .AddNextRunner(dockerApiGatewayRunner)
                     .AddNextRunner(healthChecksDashboardRunner)
                     .AddNextRunner(runners[0]);
                 
@@ -139,9 +139,9 @@ internal class NexusRunner
                 InitializeDockerRunner initializeDockerRunner = new(_configurationService, runType, context);
                 DevCertsRunner devCertsRunner = new(_configurationService, runType, context);
                 BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
-                DockerDiscoveryServerRunner dockerDiscoveryServerRunner = new(_configurationService, runType, context);
+                DiscoveryServerRunner dockerDiscoveryServerRunner = new DockerDiscoveryServerRunner(_configurationService, runType, context);
 
-                ApiGatewayRunner apiGatewayRunner = new(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
+                ApiGatewayRunner dockerApiGatewayRunner = new DockerApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 HealthChecksDashboardRunner healthChecksDashboardRunner = new(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
 
                 List<StandardServiceRunner> runners = new();
@@ -171,7 +171,7 @@ internal class NexusRunner
                     .AddNextRunner(devCertsRunner)
                     .AddNextRunner(buildDockerImagesRunner)
                     .AddNextRunner(dockerDiscoveryServerRunner)
-                    .AddNextRunner(apiGatewayRunner)
+                    .AddNextRunner(dockerApiGatewayRunner)
                     .AddNextRunner(healthChecksDashboardRunner)
                     .AddNextRunner(runners[0]);
 
@@ -229,10 +229,10 @@ internal class NexusRunner
                 DevCertsRunner devCertsRunner = new(_configurationService, runType, context);
                 BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
                 PublishDockerImagesRunner publishDockerImagesRunner = new (_configurationService, runType, context);
-                DiscoveryServerRunner kubernetesDiscoveryServerRunner = new KubernetesDiscoveryServerRunner(_configurationService, runType, context);
+                DiscoveryServerRunner discoveryServerRunner = new KubernetesDiscoveryServerRunner(_configurationService, runType, context);
                 InfrastructureRunner infrastructureRunner = new KubernetesInfrastructureRunner(_configurationService, context);
-
-                // ApiGatewayRunner apiGatewayRunner = new(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
+                ConsulGlobalConfigRunner consulGlobalConfigRunner = new(_configurationService, _consulApiService, runType, context);
+                ApiGatewayRunner apiGatewayRunner = new KubernetesApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 // HealthChecksDashboardRunner healthChecksDashboardRunner = new(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
                 //
                 // List<StandardServiceRunner> runners = new();
@@ -247,8 +247,6 @@ internal class NexusRunner
                 //     runners[i].AddNextRunner(runners[i + 1]);
                 // }
 
-                ConsulGlobalConfigRunner consulGlobalConfigRunner =
-                    new(_configurationService, _consulApiService, runType, context);
                 EnvironmentUpdateRunner environmentUpdateRunner = new(_configurationService, runType, context);
                 DockerComposeRunner dockerComposeRunner = new(_configurationService, runType, context);
 
@@ -259,11 +257,12 @@ internal class NexusRunner
 
                 globalAppSettingsRunner
                     .AddNextRunner(devCertsRunner)
-                    .AddNextRunner(buildDockerImagesRunner)
-                    .AddNextRunner(publishDockerImagesRunner)
-                    .AddNextRunner(kubernetesDiscoveryServerRunner)
-                    .AddNextRunner(infrastructureRunner);
-                    // .AddNextRunner(apiGatewayRunner)
+                    // .AddNextRunner(buildDockerImagesRunner)
+                    // .AddNextRunner(publishDockerImagesRunner)
+                    .AddNextRunner(discoveryServerRunner)
+                    .AddNextRunner(infrastructureRunner)
+                    .AddNextRunner(consulGlobalConfigRunner)
+                    .AddNextRunner(apiGatewayRunner);
                     // .AddNextRunner(healthChecksDashboardRunner)
                     // .AddNextRunner(runners[0]);
 

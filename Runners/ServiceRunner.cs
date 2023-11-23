@@ -30,41 +30,44 @@ public abstract class ServiceRunner<T> : ComponentRunner
         ProgressTask progressTask = Context.AddTask($"Setting up {Configuration.ServiceName}");
         
         // Create policy
-        PolicyCreationResult policy = CreatePolicy(state.GlobalToken);
+        PolicyCreationResult policyResult = CreatePolicy(state);
 
-        if (string.IsNullOrEmpty(policy.Id))
+        if (policyResult.IsFailure())
         {
-            Console.Error.WriteLine($"Unable to create policy for {Configuration.ServiceName}");
+            AddError($"Unable to create policy for {Configuration.ServiceName}", state);
             state.LastStepStatus = StepStatus.Failure;
             progressTask.StopTask();
             return state;
         }
         
-        progressTask.Increment(25);
-        state.Policies[Configuration.ServiceName] = policy;
+        progressTask.Increment(20);
+        state.Policies[Configuration.ServiceName] = policyResult;
         
         // Create token
-        string serviceToken = CreateToken(state, policy.Name);
+        string serviceToken = CreateToken(state, policyResult.Name);
 
         if (string.IsNullOrEmpty(serviceToken))
         {
-            AnsiConsole.MarkupLine($"[red]Unable to create service token for {Configuration.ServiceName}[/]");
+            AddError($"Unable to create service token for {Configuration.ServiceName}", state);
             state.LastStepStatus = StepStatus.Failure;
             progressTask.StopTask();
             return state;
         }
         
-        progressTask.Increment(25);
+        progressTask.Increment(20);
         state.ServiceTokens[Configuration.ServiceName] = serviceToken;
         
         // Update app-config
         // Create KV
         UpdateAppConfig(state);
-        progressTask.Increment(25);
+        progressTask.Increment(20);
         
         // Update AppSettings
         UpdateAppSettings(state);
-        progressTask.Increment(25);
+        progressTask.Increment(20);
+        
+        RunService(state);
+        progressTask.Increment(20);
         
         // Add to ServiceList
         state.ServiceUrls.Add(Configuration.ServiceName, $"https://localhost:{Configuration.Port}");
@@ -74,7 +77,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
         return state;
     }
 
-    protected virtual PolicyCreationResult CreatePolicy(string globalToken)
+    protected virtual PolicyCreationResult CreatePolicy(RunState state)
     {
         string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName), "rules.hcl");
 
@@ -85,7 +88,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         string rules = File.ReadAllText(consulRulesFile);
 
-        PolicyCreationResult policy = ConsulApiService.CreateConsulPolicy(globalToken, rules, Configuration.ServiceName);
+        PolicyCreationResult policy = ConsulApiService.CreateConsulPolicy(state.GlobalToken, rules, Configuration.ServiceName);
         return policy;
     }
 
@@ -128,7 +131,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         if (!File.Exists(appSettingsPath))
         {
-            AnsiConsole.MarkupLine($"[red]File not found: appsettings.json for {Configuration.ServiceName}[/]");
+            AddError($"File not found: appsettings.json for {Configuration.ServiceName}", state);
             return;
         }
 
@@ -137,7 +140,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
         if (appSettings == null)
         {
-            AnsiConsole.MarkupLine($"[red]Unable to read file: appsettings.json for {Configuration.ServiceName}[/]");
+            AddError($"Unable to read file: appsettings.json for {Configuration.ServiceName}", state);
             return;
         }
         
@@ -145,5 +148,10 @@ public abstract class ServiceRunner<T> : ComponentRunner
         
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
         File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
+    }
+
+    protected virtual void RunService(RunState state)
+    {
+        state.LastStepStatus = StepStatus.Success;
     }
 }

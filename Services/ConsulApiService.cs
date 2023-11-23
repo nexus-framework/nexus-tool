@@ -12,21 +12,23 @@ public class ConsulApiService
     
     public PolicyCreationResult CreateConsulPolicy(string globalToken, string rules, string serviceName)
     {
+        string policyName = $"kv-{serviceName}";
         HttpClient? client = GetConsulHttpClient(globalToken);
-        PolicyCreationResult policy = GetConsulPolicyBody(serviceName, rules);
-        StringContent content = new (policy.Json, Encoding.UTF8, "application/json");
+        string policyJson = GetConsulPolicyBody(serviceName, policyName, rules);
+        StringContent content = new (policyJson, Encoding.UTF8, "application/json");
         HttpResponseMessage response = client.PutAsync(PolicyApiUrl, content).Result;
         string responseContent = response.Content.ReadAsStringAsync().Result;
         dynamic? jsonResponse = JsonConvert.DeserializeObject(responseContent);
 
         if (jsonResponse == null)
         {
-            return new PolicyCreationResult();
+            return new PolicyCreationResult()
+            {
+                Status = PolicyCreationStatus.Failure,
+            };
         }
         
-        policy.Id = jsonResponse.ID;
-        
-        return policy;
+        return PolicyCreationResult.Success(policyName);
     }
 
     private static HttpClient GetConsulHttpClient(string globalToken)
@@ -36,9 +38,8 @@ public class ConsulApiService
         return client;
     }
     
-    private static PolicyCreationResult GetConsulPolicyBody(string serviceName, string rules)
+    private static string GetConsulPolicyBody(string serviceName, string policyName, string rules)
     {
-        string policyName = $"kv-{serviceName}";
         var bodyJson = new
         {
             Name = policyName,
@@ -46,11 +47,7 @@ public class ConsulApiService
             Rules = rules
         };
 
-        return new PolicyCreationResult
-        {
-            Json = JsonConvert.SerializeObject(bodyJson),
-            Name = policyName,
-        };
+        return JsonConvert.SerializeObject(bodyJson);
     }
 
     private static string GetConsulTokenBody(string serviceName, string policyName)
