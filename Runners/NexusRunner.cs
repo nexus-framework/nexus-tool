@@ -1,4 +1,10 @@
 using Nexus.Config;
+using Nexus.Runners.ApiGateway;
+using Nexus.Runners.BuildDockerImages;
+using Nexus.Runners.DevCerts;
+using Nexus.Runners.DiscoveryServer;
+using Nexus.Runners.HealthChecks;
+using Nexus.Runners.StandardService;
 using Nexus.Services;
 using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
@@ -47,16 +53,16 @@ internal class NexusRunner
                 
                 GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType, context);
                 InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType, context);
-                DevCertsRunner devCertsRunner = new (_configurationService, runType, context);
+                DevCertsRunner devCertsRunner = new DockerDevCertsRunner(_configurationService, runType, context);
                 DiscoveryServerRunner dockerDiscoveryServerRunner = new DockerDiscoveryServerRunner(_configurationService, runType, context);
                 ApiGatewayRunner dockerApiGatewayRunner = new DockerApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 HealthChecksDashboardRunner healthChecksDashboardRunner =
-                    new (_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
+                    new DockerHealthChecksDashboardRunner(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
 
                 List<StandardServiceRunner> runners = new ();
                 foreach (NexusServiceConfiguration? configuration in config.Services)
                 {
-                    StandardServiceRunner? runner = new (_configurationService, configuration, runType, _consulApiService, context);
+                    StandardServiceRunner runner = new DockerStandardServiceRunner(_configurationService, configuration, _consulApiService, context);
                     runners.Add(runner);
                 }
 
@@ -137,17 +143,17 @@ internal class NexusRunner
 
                 GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
                 InitializeDockerRunner initializeDockerRunner = new(_configurationService, runType, context);
-                DevCertsRunner devCertsRunner = new(_configurationService, runType, context);
+                DevCertsRunner devCertsRunner = new DockerDevCertsRunner(_configurationService, runType, context);
                 BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
                 DiscoveryServerRunner dockerDiscoveryServerRunner = new DockerDiscoveryServerRunner(_configurationService, runType, context);
 
                 ApiGatewayRunner dockerApiGatewayRunner = new DockerApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
-                HealthChecksDashboardRunner healthChecksDashboardRunner = new(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
+                HealthChecksDashboardRunner healthChecksDashboardRunner = new DockerHealthChecksDashboardRunner(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
 
                 List<StandardServiceRunner> runners = new();
                 foreach (NexusServiceConfiguration? configuration in config.Services)
                 {
-                    StandardServiceRunner runner = new(_configurationService, configuration, runType, _consulApiService, context);
+                    StandardServiceRunner runner = new DockerStandardServiceRunner(_configurationService, configuration, _consulApiService, context);
                     runners.Add(runner);
                 }
 
@@ -226,26 +232,26 @@ internal class NexusRunner
                 RunType runType = RunType.K8s;
 
                 GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
-                DevCertsRunner devCertsRunner = new(_configurationService, runType, context);
-                BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
-                PublishDockerImagesRunner publishDockerImagesRunner = new (_configurationService, runType, context);
+                // BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
+                // PublishDockerImagesRunner publishDockerImagesRunner = new (_configurationService, runType, context);
                 DiscoveryServerRunner discoveryServerRunner = new KubernetesDiscoveryServerRunner(_configurationService, runType, context);
+                DevCertsRunner devCertsRunner = new KubernetesDevCertsRunner(_configurationService, context);
                 InfrastructureRunner infrastructureRunner = new KubernetesInfrastructureRunner(_configurationService, context);
                 ConsulGlobalConfigRunner consulGlobalConfigRunner = new(_configurationService, _consulApiService, runType, context);
                 ApiGatewayRunner apiGatewayRunner = new KubernetesApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
-                // HealthChecksDashboardRunner healthChecksDashboardRunner = new(_configurationService, config.Framework.HealthChecksDashboard, runType, _consulApiService, context);
-                //
-                // List<StandardServiceRunner> runners = new();
-                // foreach (NexusServiceConfiguration? configuration in config.Services)
-                // {
-                //     StandardServiceRunner runner = new(_configurationService, configuration, runType, _consulApiService, context);
-                //     runners.Add(runner);
-                // }
-                //
-                // for (int i = 0; i < runners.Count - 1; i++)
-                // {
-                //     runners[i].AddNextRunner(runners[i + 1]);
-                // }
+                HealthChecksDashboardRunner healthChecksDashboardRunner = new KubernetesHealthChecksDashboardRunner(_configurationService, config.Framework.HealthChecksDashboard, _consulApiService, context);
+                
+                List<StandardServiceRunner> runners = new();
+                foreach (NexusServiceConfiguration? configuration in config.Services)
+                {
+                    StandardServiceRunner runner = new KubernetesStandardServiceRunner(_configurationService, configuration, _consulApiService, context);
+                    runners.Add(runner);
+                }
+                
+                for (int i = 0; i < runners.Count - 1; i++)
+                {
+                    runners[i].AddNextRunner(runners[i + 1]);
+                }
 
                 EnvironmentUpdateRunner environmentUpdateRunner = new(_configurationService, runType, context);
                 DockerComposeRunner dockerComposeRunner = new(_configurationService, runType, context);
@@ -256,15 +262,15 @@ internal class NexusRunner
                 //     .AddNextRunner(dockerComposeRunner);
 
                 globalAppSettingsRunner
-                    .AddNextRunner(devCertsRunner)
                     // .AddNextRunner(buildDockerImagesRunner)
                     // .AddNextRunner(publishDockerImagesRunner)
                     .AddNextRunner(discoveryServerRunner)
+                    .AddNextRunner(devCertsRunner)
                     .AddNextRunner(infrastructureRunner)
                     .AddNextRunner(consulGlobalConfigRunner)
-                    .AddNextRunner(apiGatewayRunner);
-                    // .AddNextRunner(healthChecksDashboardRunner)
-                    // .AddNextRunner(runners[0]);
+                    .AddNextRunner(apiGatewayRunner)
+                    .AddNextRunner(healthChecksDashboardRunner)
+                    .AddNextRunner(runners[0]);
 
                 _state = globalAppSettingsRunner.Start(_state);
 
@@ -288,6 +294,8 @@ internal class NexusRunner
         {
             AnsiConsole.MarkupLine($"[red]{error}[/]");
         }
+        
+        AnsiConsole.MarkupLine($"[yellow]{_state}[/]");
         return false;
     }
 }

@@ -1,5 +1,4 @@
 using Nexus.Config;
-using Nexus.Models;
 using Spectre.Console;
 
 namespace Nexus.Runners;
@@ -50,33 +49,6 @@ public abstract class ComponentRunner
     {
         state.Errors.Add($"Error in {DisplayName}: {error}");
     }
-}
-
-public class RunState
-{
-    public RunState(string networkName, string devCertsPassword)
-    {
-        NetworkName = networkName;
-        DevCertsPassword = devCertsPassword;
-    }
-    
-    public string NetworkName { get; set; }
-    public string NetworkId { get; set; } = string.Empty;
-    public string SubnetIp { get; set; } = string.Empty;
-    public string GlobalToken { get; set; } = string.Empty;
-    public string DevCertsPassword { get; set; }
-    
-    public Dictionary<string, PolicyCreationResult> Policies = new ();
-    
-    public StepStatus LastStepStatus { get; set; }
-
-    public Dictionary<string, string> ServiceUrls { get; set; } = new ();
-
-    public string DockerImageVersion { get; set; } = string.Empty;
-
-    public Dictionary<string, string> ServiceTokens = new ();
-
-    public List<string> Errors { get; set; } = new ();
 }
 
 public enum StepStatus

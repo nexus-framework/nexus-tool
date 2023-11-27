@@ -1,22 +1,21 @@
-using System.Text;
+﻿using System.Text;
 using Newtonsoft.Json;
 using Nexus.Config;
 using Nexus.Services;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.StandardService;
 
-public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
+public class DockerStandardServiceRunner : StandardServiceRunner
 {
-    public StandardServiceRunner(
+    public DockerStandardServiceRunner(
         ConfigurationService configurationService,
         NexusServiceConfiguration configuration,
-        RunType runType,
-        ConsulApiService consulApiService, ProgressContext context)
-        : base(configurationService, configuration, runType, consulApiService, context)
+        ConsulApiService consulApiService,
+        ProgressContext context) 
+        : base(configurationService, configuration, RunType.Docker, consulApiService, context)
     {
     }
-
     protected override void UpdateAppConfig(RunState state)
     {
         string appConfigPath = Path.Combine(
@@ -54,6 +53,4 @@ public class StandardServiceRunner : ServiceRunner<NexusServiceConfiguration>
         appConfig.Postgres.Client.Port = Configuration.DbPort ?? 5432;
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
-
-    protected override string DisplayName => $"{Configuration.ServiceName} Runner";
 }

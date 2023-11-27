@@ -5,11 +5,11 @@ using Nexus.Models;
 using Nexus.Services;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.ApiGateway;
 
-public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfiguration>
+public class DockerApiGatewayRunner : ApiGatewayRunner
 {
-    public HealthChecksDashboardRunner(
+    public DockerApiGatewayRunner(
         ConfigurationService configurationService,
         NexusServiceConfiguration configuration,
         RunType runType,
@@ -17,10 +17,10 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
         : base(configurationService, configuration, runType, consulApiService, context)
     {
     }
-
+    
     protected override void UpdateAppConfig(RunState state)
     {
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.HealthChecksDashboardConsulDirectory,
+        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayConsulDirectory,
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -49,7 +49,8 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
 
     protected override void UpdateAppSettings(RunState state)
     {
-        string appSettingsPath = Path.Combine(ConfigurationService.HealthChecksDashboardAppSettingsFile);
+        UpdateOcelotConfig(state);
+        string appSettingsPath = Path.Combine(ConfigurationService.ApiGatewayAppSettingsFile);
 
         if (!File.Exists(appSettingsPath))
         {
@@ -71,10 +72,10 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
         File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
     }
-    
+
     protected override PolicyCreationResult CreatePolicy(RunState state)
     {
-        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.HealthChecksDashboardConsulDirectory, "rules.hcl");
+        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayConsulDirectory, "rules.hcl");
 
         if (!File.Exists(consulRulesFile))
         {
@@ -86,11 +87,36 @@ public class HealthChecksDashboardRunner : ServiceRunner<NexusServiceConfigurati
         PolicyCreationResult policy = ConsulApiService.CreateConsulPolicy(state.GlobalToken, rules, Configuration.ServiceName);
         return policy;
     }
-
+    
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
+    
+    private void UpdateOcelotConfig(RunState state)
+    {
+        string ocelotConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayOcelotDirectory,
+            "ocelot.global.json");
 
-    protected override string DisplayName => "Health Checks Dashboard Runner";
+        if (!File.Exists(ocelotConfigPath))
+        {
+            return;
+        }
+
+        string ocelotConfigJson = File.ReadAllText(ocelotConfigPath);
+        dynamic? ocelotConfig = JsonConvert.DeserializeObject<dynamic>(ocelotConfigJson);
+
+        if (ocelotConfig == null)
+        {
+            return;
+        }
+
+        ocelotConfig.BaseUrl = ConfigurationService.GetConsulEndpoint(RunType);
+        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = ConfigurationService.GetConsulHost(RunType);
+        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Token =
+            state.ServiceTokens[Configuration.ServiceName];
+
+        string updatedOcelotConfigJson = JsonConvert.SerializeObject(ocelotConfig, Formatting.Indented);
+        File.WriteAllText(ocelotConfigPath, updatedOcelotConfigJson);
+    }
 }

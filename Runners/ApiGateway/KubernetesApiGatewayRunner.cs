@@ -9,7 +9,7 @@ using Nexus.Services;
 using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.ApiGateway;
 
 public class KubernetesApiGatewayRunner : ApiGatewayRunner
 {
@@ -40,8 +40,8 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
 
     protected override string CreateToken(RunState state, string policyName)
     {
-        var config = KubernetesClientConfiguration.BuildConfigFromConfigFile();
-        var client = new Kubernetes(config);
+        KubernetesClientConfiguration? config = KubernetesClientConfiguration.BuildConfigFromConfigFile();
+        Kubernetes client = new (config);
         
         try
         {
@@ -53,7 +53,6 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
                 result = client.BatchV1
                     .ReadNamespacedJobStatusWithHttpMessagesAsync("apply-api-gateway-policy", "nexus", true).GetAwaiter()
                     .GetResult();
-                AnsiConsole.MarkupLine($"[red]retry {retryCount}[/]");
             } while (result.Body.Status.Active is > 0 && retryCount++ < 5);
             
             if (result.Body.Status.Succeeded is > 0)
@@ -178,6 +177,7 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
             return;
         }
 
+        ocelotConfig.BaseUrl = ConfigurationService.GetConsulEndpoint(RunType);
         ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = ConfigurationService.GetConsulHost(RunType);
         ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Token =
             state.ServiceTokens[Configuration.ServiceName];

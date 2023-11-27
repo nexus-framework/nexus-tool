@@ -2,7 +2,7 @@ using Nexus.Config;
 using Nexus.Services;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.ApiGateway;
 
 public abstract class ApiGatewayRunner : ServiceRunner<NexusServiceConfiguration>
 {

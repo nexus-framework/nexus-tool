@@ -1,7 +1,7 @@
 using Nexus.Config;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.DiscoveryServer;
 
 public abstract class DiscoveryServerRunner : ComponentRunner
 {

@@ -91,11 +91,11 @@ public static class ConsoleUtilities
         process.StartInfo.UseShellExecute = false;
         process.EnableRaisingEvents = false;
         
-        StringBuilder outputBuilder = new StringBuilder();
-        StringBuilder errorBuilder = new StringBuilder();
+        StringBuilder outputBuilder = new ();
+        StringBuilder errorBuilder = new ();
         
-        using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
-        using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
+        using (AutoResetEvent outputWaitHandle = new (false))
+        using (AutoResetEvent errorWaitHandle = new (false))
         {
             if (captureOutput)
             {
@@ -138,7 +138,7 @@ public static class ConsoleUtilities
 
     public static void PrintState(RunState state)
     {
-        Spectre.Console.Table table = new Spectre.Console.Table();
+        Spectre.Console.Table table = new ();
         table.Border(TableBorder.Rounded);
         table.AddColumn(new TableColumn("[bold]Service[/]").LeftAligned());
         table.AddColumn(new TableColumn("[bold]Url[/]").LeftAligned());

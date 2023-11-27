@@ -15,7 +15,7 @@ public class ConfigurationService
         return Path.Combine(GetBasePath(), "nexus.config.json");
     }
 
-    public string ApiGatewayDirectory => Path.Combine(GetBasePath(), "api-gateway", "src", "Nexus.ApiGateway");
+    public string ApiGatewayDirectory => Path.Combine(GetBasePath(), @"api-gateway\src\Nexus.ApiGateway");
     public string ApiGatewayDockerfile => Path.Combine(ApiGatewayDirectory, "Dockerfile");
     public string ApiGatewayOcelotDirectory => Path.Combine(ApiGatewayDirectory, "Ocelot");
     public string ApiGatewayAppSettingsFile => Path.Combine(ApiGatewayDirectory, "appsettings.json");
@@ -24,22 +24,26 @@ public class ConfigurationService
     public string ApiGatewayKubernetesPolicyFile => Path.Combine(ApiGatewayKubernetesDirectory, "policies.yaml");
     public string ApiGatewayKubernetesServiceFile => Path.Combine(ApiGatewayKubernetesDirectory, "service.yaml");
     public string ApiGatewayCsProjFile => Path.Combine(ApiGatewayDirectory, "Nexus.ApiGateway.csproj");
-    public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), "health-checks-dashboard", "src", "Nexus.HealthChecksDashboard");
+    
+    public string HealthChecksDashboardDirectory => Path.Combine(GetBasePath(), @"health-checks-dashboard", "src", "Nexus.HealthChecksDashboard");
     public string HealthChecksDashboardDockerfile => Path.Combine(HealthChecksDashboardDirectory, "Dockerfile");
     public string HealthChecksDashboardConsulDirectory => Path.Combine(HealthChecksDashboardDirectory, "Consul");
-    public string HealthChecksDashboardAppSettingsFile => Path.Combine(HealthChecksDashboardDirectory, "appsettings.json");
-    public string HealthChecksDashboardCsProjFile => Path.Combine(HealthChecksDashboardDirectory, "Nexus.HealthChecksDashboard.csproj");
     public string HealthChecksDashboardKubernetesDirectory => Path.Combine(GetBasePath(), "health-checks-dashboard", "k8s");
     public string HealthChecksDashboardKubernetesPolicyFile => Path.Combine(HealthChecksDashboardKubernetesDirectory, "policies.yaml");
-    public string FrontEndAppDirectory => Path.Combine(GetBasePath(), "frontend-app");
+    public string HealthChecksDashboardKubernetesServiceFile => Path.Combine(HealthChecksDashboardKubernetesDirectory, "service.yaml");
+    public string HealthChecksDashboardAppSettingsFile => Path.Combine(HealthChecksDashboardDirectory, "appsettings.json");
+    public string HealthChecksDashboardCsProjFile => Path.Combine(HealthChecksDashboardDirectory, "Nexus.HealthChecksDashboard.csproj");
+    
+    public string FrontEndAppDirectory => Path.Combine(GetBasePath(), @"frontend-app");
 
-    public string DiscoveryServerConfigFolder => Path.Combine(GetBasePath(), "discovery-server", "docker");
+    public string DiscoveryServerConfigFolder => Path.Combine(GetBasePath(), @"discovery-server\docker\");
     public string DiscoveryServerDockerCompose => Path.Combine(DiscoveryServerConfigFolder, "docker-compose.yml");
     public string DiscoveryServerAcl => Path.Combine(DiscoveryServerConfigFolder, "consul-acl.json");
     
     public string KuberetesDirectory => Path.Combine(GetBasePath(), "k8s");
     public string KuberetesConsulFile => Path.Combine(KuberetesDirectory, "consul.yaml");
     
+    public string KubernetesCertificateFile => Path.Combine(KuberetesDirectory, "certs.yaml");
     public string KuberetesPrometheusFile => Path.Combine(KuberetesDirectory, "prometheus.yaml");
     public string KubernetesElasticFile => Path.Combine(KuberetesDirectory, "elastic.yaml");
     public string KubernetesGrafanaFile => Path.Combine(KuberetesDirectory, "grafana.yaml");
@@ -56,8 +60,14 @@ public class ConfigurationService
     public string GetServiceDockerfile(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, $"Dockerfile");
     
-    public string GetServiceKubernetesPolicy(string serviceName) =>
-        Path.Combine(GetBasePath(), "services", serviceName, "src", "k8s", "policies.yaml");
+    public string GetServiceKubernetesDirectory(string serviceName, string projectName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "k8s");
+
+    public string GetServiceKubernetesPolicyFile(string serviceName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "k8s", "policies.yaml");
+    
+    public string GetServiceKubernetesServiceFile(string serviceName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "k8s", "service.yaml");
 
     public string GetDockerComposePath(RunType runType)
         => runType switch 
@@ -103,6 +113,7 @@ public class ConfigurationService
     {
         RunType.Local => "localhost",
         RunType.Docker => $"{NameExtensions.GetKebabCasedNameWithoutApi(serviceName)}-db",
+        RunType.K8s => $"{NameExtensions.GetKebabCasedNameWithoutApi(serviceName)}-db.nexus.svc.cluster.local",
         _ => "",
     };
 
@@ -219,5 +230,4 @@ public class ConfigurationService
 
         return config.Services.Where(x => x.DbPort.HasValue).Select(x => x.DbPort).Max() + 2 ?? 5438;
     }
-
 }

@@ -11,7 +11,7 @@ public class Program
     {
         AnsiConsole.Write(new FigletText("Nexus Framework").LeftJustified().Color(Color.Green));
         
-        CommandApp app = new CommandApp();
+        CommandApp app = new ();
         app.Configure(config =>
         {
             config.AddCommand<InitCommand>("init")

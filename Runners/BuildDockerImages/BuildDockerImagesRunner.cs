@@ -2,7 +2,7 @@
 using Spectre.Console;
 using static Nexus.Extensions.ConsoleUtilities;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.BuildDockerImages;
 
 public class BuildDockerImagesRunner : ComponentRunner
 {

@@ -26,6 +26,11 @@ public class PolicyCreationResult
             Status = PolicyCreationStatus.Success,
         };
     }
+
+    public override string ToString()
+    {
+        return $"Policy: {Name} - {Status}";
+    }
 }
 
 public enum PolicyCreationStatus

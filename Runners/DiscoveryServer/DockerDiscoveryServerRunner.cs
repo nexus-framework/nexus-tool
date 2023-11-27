@@ -5,7 +5,7 @@ using Nexus.Config;
 using Nexus.Extensions;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.DiscoveryServer;
 
 public class DockerDiscoveryServerRunner : DiscoveryServerRunner
 {

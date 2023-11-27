@@ -5,22 +5,24 @@ using Nexus.Models;
 using Nexus.Services;
 using Spectre.Console;
 
-namespace Nexus.Runners;
+namespace Nexus.Runners.HealthChecks;
 
-public class DockerApiGatewayRunner : ApiGatewayRunner
+public class DockerHealthChecksDashboardRunner : HealthChecksDashboardRunner
 {
-    public DockerApiGatewayRunner(
+    
+    public DockerHealthChecksDashboardRunner(
         ConfigurationService configurationService,
         NexusServiceConfiguration configuration,
         RunType runType,
-        ConsulApiService consulApiService, ProgressContext context)
+        ConsulApiService consulApiService,
+        ProgressContext context) 
         : base(configurationService, configuration, runType, consulApiService, context)
     {
     }
     
     protected override void UpdateAppConfig(RunState state)
     {
-        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayConsulDirectory,
+        string appConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.HealthChecksDashboardConsulDirectory,
             "app-config.json");
 
         if (!File.Exists(appConfigPath))
@@ -49,8 +51,7 @@ public class DockerApiGatewayRunner : ApiGatewayRunner
 
     protected override void UpdateAppSettings(RunState state)
     {
-        UpdateOcelotConfig(state);
-        string appSettingsPath = Path.Combine(ConfigurationService.ApiGatewayAppSettingsFile);
+        string appSettingsPath = Path.Combine(ConfigurationService.HealthChecksDashboardAppSettingsFile);
 
         if (!File.Exists(appSettingsPath))
         {
@@ -72,10 +73,10 @@ public class DockerApiGatewayRunner : ApiGatewayRunner
         string updatedAppSettingsJson = JsonConvert.SerializeObject(appSettings, Formatting.Indented);
         File.WriteAllText(appSettingsPath, updatedAppSettingsJson);
     }
-
+    
     protected override PolicyCreationResult CreatePolicy(RunState state)
     {
-        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayConsulDirectory, "rules.hcl");
+        string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.HealthChecksDashboardConsulDirectory, "rules.hcl");
 
         if (!File.Exists(consulRulesFile))
         {
@@ -87,35 +88,10 @@ public class DockerApiGatewayRunner : ApiGatewayRunner
         PolicyCreationResult policy = ConsulApiService.CreateConsulPolicy(state.GlobalToken, rules, Configuration.ServiceName);
         return policy;
     }
-    
+
     private void ModifyAppConfig(dynamic appConfig, RunState state)
     {
         appConfig.Consul.Token = state.ServiceTokens[Configuration.ServiceName];
     }
-    
-    private void UpdateOcelotConfig(RunState state)
-    {
-        string ocelotConfigPath = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.ApiGatewayOcelotDirectory,
-            "ocelot.global.json");
 
-        if (!File.Exists(ocelotConfigPath))
-        {
-            return;
-        }
-
-        string ocelotConfigJson = File.ReadAllText(ocelotConfigPath);
-        dynamic? ocelotConfig = JsonConvert.DeserializeObject<dynamic>(ocelotConfigJson);
-
-        if (ocelotConfig == null)
-        {
-            return;
-        }
-
-        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = ConfigurationService.GetConsulHost(RunType);
-        ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Token =
-            state.ServiceTokens[Configuration.ServiceName];
-
-        string updatedOcelotConfigJson = JsonConvert.SerializeObject(ocelotConfig, Formatting.Indented);
-        File.WriteAllText(ocelotConfigPath, updatedOcelotConfigJson);
-    }
 }
