@@ -49,7 +49,7 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
             int retryCount = 0;
             do
             {
-                Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+                Task.Delay(TimeSpan.FromSeconds(10)).Wait();
                 result = client.BatchV1
                     .ReadNamespacedJobStatusWithHttpMessagesAsync("apply-api-gateway-policy", "nexus", true).GetAwaiter()
                     .GetResult();
@@ -177,7 +177,7 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
             return;
         }
 
-        ocelotConfig.BaseUrl = ConfigurationService.GetConsulEndpoint(RunType);
+        ocelotConfig.GlobalConfiguration.BaseUrl = ConfigurationService.GetConsulEndpoint(RunType);
         ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Host = ConfigurationService.GetConsulHost(RunType);
         ocelotConfig.GlobalConfiguration.ServiceDiscoveryProvider.Token =
             state.ServiceTokens[Configuration.ServiceName];
