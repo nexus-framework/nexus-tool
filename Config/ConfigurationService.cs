@@ -7,8 +7,8 @@ namespace Nexus.Config;
 
 public class ConfigurationService
 {
-    public string GetBasePath() => @"C:\source\dotnet\temp";
-    //public string GetBasePath() => Directory.GetCurrentDirectory();
+    //public string GetBasePath() => @"C:\source\dotnet\temp";
+    public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
@@ -68,6 +68,10 @@ public class ConfigurationService
     
     public string GetServiceKubernetesServiceFile(string serviceName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "k8s", "service.yaml");
+    
+    public string GetFrontendAppKubernetesServiceFile() =>
+        Path.Combine(GetBasePath(), "frontend-app", "k8s", "service.yaml");
+
 
     public string GetDockerComposePath(RunType runType)
         => runType switch 

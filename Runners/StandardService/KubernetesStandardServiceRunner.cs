@@ -47,11 +47,11 @@ public class KubernetesStandardServiceRunner : StandardServiceRunner
             int retryCount = 0;
             do
             {
-                Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+                Task.Delay(TimeSpan.FromSeconds(10)).Wait();
                 result = client.BatchV1
                     .ReadNamespacedJobStatusWithHttpMessagesAsync($"apply-{Configuration.ServiceName}-policy", "nexus", true).GetAwaiter()
                     .GetResult();
-            } while (result.Body.Status.Active is > 0 && retryCount++ < 5);
+            } while (result.Body.Status.Active is > 0 && retryCount++ < 10);
             
             if (result.Body.Status.Succeeded is > 0)
             {

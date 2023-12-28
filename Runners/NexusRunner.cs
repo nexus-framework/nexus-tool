@@ -240,6 +240,7 @@ internal class NexusRunner
                 ConsulGlobalConfigRunner consulGlobalConfigRunner = new(_configurationService, _consulApiService, runType, context);
                 ApiGatewayRunner apiGatewayRunner = new KubernetesApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 HealthChecksDashboardRunner healthChecksDashboardRunner = new KubernetesHealthChecksDashboardRunner(_configurationService, config.Framework.HealthChecksDashboard, _consulApiService, context);
+                KubernetesFrontendAppRunner frontendAppRunner = new KubernetesFrontendAppRunner(_configurationService, runType, context);
                 
                 List<StandardServiceRunner> runners = new();
                 foreach (NexusServiceConfiguration? configuration in config.Services)
@@ -252,11 +253,13 @@ internal class NexusRunner
                 {
                     runners[i].AddNextRunner(runners[i + 1]);
                 }
+                
 
                 EnvironmentUpdateRunner environmentUpdateRunner = new(_configurationService, runType, context);
                 DockerComposeRunner dockerComposeRunner = new(_configurationService, runType, context);
 
-                // runners.Last()
+                runners.Last()
+                    .AddNextRunner(frontendAppRunner);
                 //     .AddNextRunner(consulGlobalConfigRunner)
                 //     .AddNextRunner(environmentUpdateRunner)
                 //     .AddNextRunner(dockerComposeRunner);
