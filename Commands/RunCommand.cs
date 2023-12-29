@@ -9,6 +9,7 @@ namespace Nexus.Commands;
 
 public class RunSetings : CommandSettings
 {
+
 }
 
 public class RunLocalSettings : RunSetings
@@ -20,7 +21,15 @@ public class RunDockerSettings : RunSetings
 }
 
 public class RunKubernetesSettings : RunSetings
-{
+{    
+    [CommandOption("-v|--verbose")]
+    public bool Verbose { get; init; }
+
+    [CommandOption("-d|--skip-updating-docker-images")]
+    public bool SkipUpdatingDockerImages { get; init; }
+
+    [CommandOption("-f|--skip-enabling-frontend")]
+    public bool SkipEnablingFrontend { get; init; } = true;
 }
 
 public class RunLocalCommand : Command<RunLocalSettings>
@@ -74,7 +83,7 @@ public class RunKubernetesCommand : Command<RunKubernetesSettings>
         ConfigurationService configurationService = new();
         ConsulApiService consulApiService = new();
         NexusRunner runner = new(configurationService, consulApiService);
-        bool result = runner.RunKubernetes();
+        bool result = runner.RunKubernetes(settings);
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Done[/]");

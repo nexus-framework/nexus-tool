@@ -25,6 +25,7 @@ public class RunState
 
     public Dictionary<string, string> ServiceTokens = new ();
     public List<string> Errors { get; set; } = new ();
+    public List<string> Logs { get; set; } = new ();
 
     public override string ToString()
     {

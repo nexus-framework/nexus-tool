@@ -49,6 +49,11 @@ public abstract class ComponentRunner
     {
         state.Errors.Add($"Error in {DisplayName}: {error}");
     }
+
+    protected void AddLog(string message, RunState state)
+    {
+        state.Logs.Add($"{DateTime.Now:O}: {message}");
+    }
 }
 
 public enum StepStatus

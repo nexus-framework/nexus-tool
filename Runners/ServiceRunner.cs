@@ -28,6 +28,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
     protected override RunState OnExecuted(RunState state)
     {
         ProgressTask progressTask = Context.AddTask($"Setting up {Configuration.ServiceName}");
+        AddLog($"Setting up {Configuration.ServiceName}", state);
         
         // Create policy
         PolicyCreationResult policyResult = CreatePolicy(state);
@@ -35,6 +36,7 @@ public abstract class ServiceRunner<T> : ComponentRunner
         if (policyResult.IsFailure())
         {
             AddError($"Unable to create policy for {Configuration.ServiceName}", state);
+            AddLog($"Unable to create policy for {Configuration.ServiceName}", state);
             state.LastStepStatus = StepStatus.Failure;
             progressTask.StopTask();
             return state;
@@ -79,21 +81,25 @@ public abstract class ServiceRunner<T> : ComponentRunner
 
     protected virtual PolicyCreationResult CreatePolicy(RunState state)
     {
+        AddLog("Creating policy", state);
         string consulRulesFile = Path.Combine(ConfigurationService.GetBasePath(), ConfigurationService.GetServiceConsulDirectory(Configuration.ServiceName, Configuration.ProjectName), "rules.hcl");
 
         if (!File.Exists(consulRulesFile))
         {
+            AddLog("Consul rules file not found", state);
             return new PolicyCreationResult();
         }
 
         string rules = File.ReadAllText(consulRulesFile);
 
         PolicyCreationResult policy = ConsulApiService.CreateConsulPolicy(state.GlobalToken, rules, Configuration.ServiceName);
+        AddLog($"Policy created: {policy.Name}", state);
         return policy;
     }
 
     protected virtual string CreateToken(RunState state, string policyName)
     {
+        AddLog($"Creating token for {Configuration.ServiceName}", state);
         string token = ConsulApiService.CreateToken(state.GlobalToken, Configuration.ServiceName, policyName);
         return token;
     }

@@ -1,3 +1,4 @@
+using Nexus.Commands;
 using Nexus.Config;
 using Nexus.Runners.ApiGateway;
 using Nexus.Runners.BuildDockerImages;
@@ -206,7 +207,7 @@ internal class NexusRunner
         return false;
     }
     
-    public bool RunKubernetes()
+    public bool RunKubernetes(RunKubernetesSettings settings)
     {
         bool result = AnsiConsole
             .Progress()
@@ -231,59 +232,74 @@ internal class NexusRunner
 
                 RunType runType = RunType.K8s;
 
+                // All runners
                 GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
-                // BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
-                // PublishDockerImagesRunner publishDockerImagesRunner = new (_configurationService, runType, context);
+                BuildDockerImagesRunner buildDockerImagesRunner = new(_configurationService, runType, context);
+                PublishDockerImagesRunner publishDockerImagesRunner = new (_configurationService, runType, context);
                 DiscoveryServerRunner discoveryServerRunner = new KubernetesDiscoveryServerRunner(_configurationService, runType, context);
                 DevCertsRunner devCertsRunner = new KubernetesDevCertsRunner(_configurationService, context);
                 InfrastructureRunner infrastructureRunner = new KubernetesInfrastructureRunner(_configurationService, context);
                 ConsulGlobalConfigRunner consulGlobalConfigRunner = new(_configurationService, _consulApiService, runType, context);
                 ApiGatewayRunner apiGatewayRunner = new KubernetesApiGatewayRunner(_configurationService, config.Framework.ApiGateway, runType, _consulApiService, context);
                 HealthChecksDashboardRunner healthChecksDashboardRunner = new KubernetesHealthChecksDashboardRunner(_configurationService, config.Framework.HealthChecksDashboard, _consulApiService, context);
-                KubernetesFrontendAppRunner frontendAppRunner = new KubernetesFrontendAppRunner(_configurationService, runType, context);
+                KubernetesFrontendAppRunner frontendAppRunner = new (_configurationService, runType, context);
                 
-                List<StandardServiceRunner> runners = new();
+                // Service runners
+                List<StandardServiceRunner> serviceRunners = new();
                 foreach (NexusServiceConfiguration? configuration in config.Services)
                 {
                     StandardServiceRunner runner = new KubernetesStandardServiceRunner(_configurationService, configuration, _consulApiService, context);
-                    runners.Add(runner);
+                    serviceRunners.Add(runner);
                 }
                 
-                for (int i = 0; i < runners.Count - 1; i++)
+                for (int i = 0; i < serviceRunners.Count - 1; i++)
                 {
-                    runners[i].AddNextRunner(runners[i + 1]);
+                    serviceRunners[i].AddNextRunner(serviceRunners[i + 1]);
                 }
-                
 
-                EnvironmentUpdateRunner environmentUpdateRunner = new(_configurationService, runType, context);
-                DockerComposeRunner dockerComposeRunner = new(_configurationService, runType, context);
+                if (!settings.SkipEnablingFrontend)
+                {
+                    serviceRunners
+                        .Last()
+                        .AddNextRunner(frontendAppRunner);
+                }
 
-                runners.Last()
-                    .AddNextRunner(frontendAppRunner);
-                //     .AddNextRunner(consulGlobalConfigRunner)
-                //     .AddNextRunner(environmentUpdateRunner)
-                //     .AddNextRunner(dockerComposeRunner);
-
-                globalAppSettingsRunner
-                    // .AddNextRunner(buildDockerImagesRunner)
-                    // .AddNextRunner(publishDockerImagesRunner)
-                    .AddNextRunner(discoveryServerRunner)
-                    .AddNextRunner(devCertsRunner)
-                    .AddNextRunner(infrastructureRunner)
-                    .AddNextRunner(consulGlobalConfigRunner)
-                    .AddNextRunner(apiGatewayRunner)
-                    .AddNextRunner(healthChecksDashboardRunner)
-                    .AddNextRunner(runners[0]);
+                // Runner Order
+                if (settings.SkipUpdatingDockerImages)
+                {
+                    globalAppSettingsRunner
+                        .AddNextRunner(discoveryServerRunner)
+                        .AddNextRunner(devCertsRunner)
+                        .AddNextRunner(infrastructureRunner)
+                        .AddNextRunner(consulGlobalConfigRunner)
+                        .AddNextRunner(apiGatewayRunner)
+                        .AddNextRunner(healthChecksDashboardRunner)
+                        .AddNextRunner(serviceRunners[0]);
+                }
+                else
+                {
+                    globalAppSettingsRunner
+                        .AddNextRunner(buildDockerImagesRunner)
+                        .AddNextRunner(publishDockerImagesRunner)
+                        .AddNextRunner(discoveryServerRunner)
+                        .AddNextRunner(devCertsRunner)
+                        .AddNextRunner(infrastructureRunner)
+                        .AddNextRunner(consulGlobalConfigRunner)
+                        .AddNextRunner(apiGatewayRunner)
+                        .AddNextRunner(healthChecksDashboardRunner)
+                        .AddNextRunner(serviceRunners[0]);
+                }
 
                 _state = globalAppSettingsRunner.Start(_state);
 
-                if (_state.LastStepStatus == StepStatus.Success)
-                {
-                    return true;
-                }
-
-                return false;
+                return _state.LastStepStatus == StepStatus.Success;
             });
+        
+        if (settings.Verbose)
+        {
+            string fileName = $"logs_{DateTime.Now:yyyy_MM_dd_hh_mm_ss}.txt";
+            File.WriteAllLines(fileName, _state.Logs);
+        }
         
         if (result)
         {
@@ -299,6 +315,7 @@ internal class NexusRunner
         }
         
         AnsiConsole.MarkupLine($"[yellow]{_state}[/]");
+
         return false;
     }
 }
