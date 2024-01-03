@@ -44,6 +44,13 @@ public class KubernetesInfrastructureRunner : InfrastructureRunner
         RunPowershellCommand($"kubectl apply -f \"{grafanaYaml}\"");
         progressTask.Increment(100);
         progressTask.StopTask();
+        
+        // Jaeger
+        string jaegerYaml = ConfigurationService.KubernetesJaegerFile;
+        progressTask = Context.AddTask("Setting up Jaeger");
+        RunPowershellCommand($"kubectl apply -f \"{jaegerYaml}\"");
+        progressTask.Increment(100);
+        progressTask.StopTask();
 
         state.LastStepStatus = StepStatus.Success;
         return state;

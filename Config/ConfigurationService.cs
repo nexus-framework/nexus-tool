@@ -47,6 +47,7 @@ public class ConfigurationService
     public string KuberetesPrometheusFile => Path.Combine(KuberetesDirectory, "prometheus.yaml");
     public string KubernetesElasticFile => Path.Combine(KuberetesDirectory, "elastic.yaml");
     public string KubernetesGrafanaFile => Path.Combine(KuberetesDirectory, "grafana.yaml");
+    public string KubernetesJaegerFile => Path.Combine(KuberetesDirectory, "jaeger.yaml");
 
     public string GetServiceConsulDirectory(string serviceName, string projectName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "src", projectName, "Consul");
