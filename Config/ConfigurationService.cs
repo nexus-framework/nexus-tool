@@ -7,8 +7,8 @@ namespace Nexus.Config;
 
 public class ConfigurationService
 {
-    public string GetBasePath() => @"C:\source\dotnet\temp";
-    //public string GetBasePath() => Directory.GetCurrentDirectory();
+    //public string GetBasePath() => @"C:\source\dotnet\temp";
+    public string GetBasePath() => Directory.GetCurrentDirectory();
     
     public string GetConfigurationPath()
     {
@@ -85,7 +85,7 @@ public class ConfigurationService
     {
         RunType.Local => "http://localhost:4317",
         RunType.Docker => "http://jaeger:4317",
-        RunType.K8s => "http://jaeger.nexus.svc.cluster.local:4317",
+        RunType.K8s => "http://jaeger.monitoring.svc.cluster.local:4317",
         _ => "",
     };
     
@@ -109,7 +109,7 @@ public class ConfigurationService
     {
         RunType.Local => "https://localhost:9200",
         RunType.Docker => "https://es01:9200",
-        RunType.K8s => "https://elastic.nexus.svc.cluster.local:9200",
+        RunType.K8s => "https://elasticsearch.monitoring.svc.cluster.local:9200",
         _ => "",
     };
 
