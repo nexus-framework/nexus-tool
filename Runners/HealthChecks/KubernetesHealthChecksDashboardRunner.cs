@@ -31,8 +31,10 @@ public class KubernetesHealthChecksDashboardRunner : HealthChecksDashboardRunner
             AddError("Policy file not found", state);
             return PolicyCreationResult.Failure(policyName);
         }
-
+        
         RunPowershellCommand($"kubectl apply -f \"{policyYaml}\"");
+        RunPowershellCommand($"kubectl wait --for=condition=ready pod -l app=apply-health-checks-dashboard-policy -n nexus --timeout=300s");
+        
         return PolicyCreationResult.Success(policyName);
     }
 
@@ -146,6 +148,8 @@ public class KubernetesHealthChecksDashboardRunner : HealthChecksDashboardRunner
         }
 
         RunPowershellCommand($"kubectl apply -f \"{serviceFile}\"");
+        RunPowershellCommand($"kubectl wait --for=condition=ready pod -l app=health-checks-dashboard -n nexus --timeout=300s");
+
         base.RunService(state);
     }
 

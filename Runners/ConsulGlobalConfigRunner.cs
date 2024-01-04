@@ -22,9 +22,11 @@ public class ConsulGlobalConfigRunner : ComponentRunner
     protected override RunState OnExecuted(RunState state)
     {
         ProgressTask progressTask = Context.AddTask("Updating Consul Global Config");
+        AddLog("Updating Consul Global Config", state);
         if(!File.Exists(ConfigurationService.GlobalConsulFile))
         {
             AddError($"Unable to find nexus global config at {ConfigurationService.GlobalConsulFile}", state);
+            AddLog($"Unable to find nexus global config at {ConfigurationService.GlobalConsulFile}", state);
             state.LastStepStatus = StepStatus.Failure;
             progressTask.StopTask();
             return state;
@@ -37,6 +39,7 @@ public class ConsulGlobalConfigRunner : ComponentRunner
         if (appConfig == null)
         {
             AddError($"Unable to parse nexus global config at {ConfigurationService.GlobalConsulFile}", state);
+            AddLog($"Unable to parse nexus global config at {ConfigurationService.GlobalConsulFile}", state);
             progressTask.StopTask();
             state.LastStepStatus = StepStatus.Failure;
             return state;
@@ -49,6 +52,7 @@ public class ConsulGlobalConfigRunner : ComponentRunner
         string updatedAppConfigJson = JsonConvert.SerializeObject(appConfig, Formatting.Indented);
         File.WriteAllText(ConfigurationService.GlobalConsulFile, updatedAppConfigJson, Encoding.UTF8);
         
+        AddLog("Adding global config to consul", state);
         _consulApiService.UploadKv("nexus-service", appConfigJson, state.GlobalToken);
         
         progressTask.Increment(50);

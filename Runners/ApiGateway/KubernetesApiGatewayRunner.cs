@@ -35,6 +35,7 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
         }
 
         RunPowershellCommand($"kubectl apply -f \"{policyYaml}\"");
+        RunPowershellCommand($"kubectl wait --for=condition=ready pod -l app=apply-api-gateway-policy -n nexus --timeout=300s");
         return PolicyCreationResult.Success(policyName);
     }
 
@@ -49,11 +50,12 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
             int retryCount = 0;
             do
             {
+                AddLog($"Checking if api gateway policy has been created. Try: {retryCount}", state);
                 Task.Delay(TimeSpan.FromSeconds(10)).Wait();
                 result = client.BatchV1
                     .ReadNamespacedJobStatusWithHttpMessagesAsync("apply-api-gateway-policy", "nexus", true).GetAwaiter()
                     .GetResult();
-            } while (result.Body.Status.Active is > 0 && retryCount++ < 5);
+            } while (result.Body.Status.Active is > 0 && retryCount++ < 10);
             
             if (result.Body.Status.Succeeded is > 0)
             {
@@ -151,6 +153,9 @@ public class KubernetesApiGatewayRunner : ApiGatewayRunner
         }
 
         RunPowershellCommand($"kubectl apply -f \"{serviceFile}\"");
+        
+        RunPowershellCommand($"kubectl wait --for=condition=ready pod -l app=api-gateway -n nexus --timeout=300s");
+
         base.RunService(state);
     }
 
