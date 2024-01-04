@@ -53,7 +53,7 @@ public class ConsulGlobalConfigRunner : ComponentRunner
         File.WriteAllText(ConfigurationService.GlobalConsulFile, updatedAppConfigJson, Encoding.UTF8);
         
         AddLog("Adding global config to consul", state);
-        _consulApiService.UploadKv("nexus-service", appConfigJson, state.GlobalToken);
+        _consulApiService.UploadKv("nexus-service", updatedAppConfigJson, state.GlobalToken);
         
         progressTask.Increment(50);
         progressTask.StopTask();
