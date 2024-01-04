@@ -148,6 +148,13 @@ public class KubernetesStandardServiceRunner : StandardServiceRunner
         }
 
         RunPowershellCommand($"kubectl apply -f \"{serviceFile}\"");
+
+        string dbExporterFile = ConfigurationService.GetServiceKubernetesDbExporterFile(Configuration.ServiceName);
+        if (File.Exists(dbExporterFile))
+        {
+            RunPowershellCommand($"kubectl apply -f \"{dbExporterFile}\"");
+        }
+        
         base.RunService(state);
     }
     private void ModifyAppConfig(dynamic appConfig, RunState state, string serviceName)

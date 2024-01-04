@@ -70,6 +70,9 @@ public class ConfigurationService
     public string GetServiceKubernetesServiceFile(string serviceName) =>
         Path.Combine(GetBasePath(), "services", serviceName, "k8s", "service.yaml");
     
+    public string GetServiceKubernetesDbExporterFile(string serviceName) =>
+        Path.Combine(GetBasePath(), "services", serviceName, "k8s", "db-exporter.yaml");
+    
     public string GetFrontendAppKubernetesServiceFile() =>
         Path.Combine(GetBasePath(), "frontend-app", "k8s", "service.yaml");
 
