@@ -11,7 +11,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>nexus</ToolCommandName>
     <OutputPath>$(SolutionDir)\artifacts\$(Configuration)\</OutputPath>
-    <Version>0.19.0.0</Version>
+    <Version>0.20.0.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/afroze9/nexus-tool</PackageProjectUrl>

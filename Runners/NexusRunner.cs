@@ -29,6 +29,7 @@ internal class NexusRunner
 
     public bool RunLocal()
     {
+        RunType runType = RunType.Local;
         bool result = AnsiConsole
             .Progress()
             .AutoClear(false)
@@ -49,8 +50,6 @@ internal class NexusRunner
                     AnsiConsole.MarkupLine("[red]Unable to read configuration[/]");
                     return false;
                 }
-
-                RunType runType = RunType.Local;
                 
                 GlobalAppSettingsRunner globalAppSettingsRunner = new (_configurationService, runType, context);
                 InitializeDockerRunner initializeDockerRunner = new (_configurationService, runType, context);
@@ -102,7 +101,7 @@ internal class NexusRunner
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Development Environment Setup Successfully[/]");
-            PrintState(_state);
+            PrintState(_state, runType);
             PrintVersion(_state);
             return true;
         }
@@ -116,6 +115,7 @@ internal class NexusRunner
 
     public bool RunDocker()
     {
+        RunType runType = RunType.Docker;
         bool result = AnsiConsole
             .Progress()
             .AutoClear(false)
@@ -140,7 +140,6 @@ internal class NexusRunner
                     return false;
                 }
 
-                RunType runType = RunType.Docker;
 
                 GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
                 InitializeDockerRunner initializeDockerRunner = new(_configurationService, runType, context);
@@ -195,7 +194,7 @@ internal class NexusRunner
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Development Environment Setup Successfully[/]");
-            PrintState(_state);
+            PrintState(_state, runType);
             PrintVersion(_state);
             return true;
         }
@@ -209,6 +208,7 @@ internal class NexusRunner
     
     public bool RunKubernetes(RunKubernetesSettings settings)
     {
+        RunType runType = RunType.K8s;
         bool result = AnsiConsole
             .Progress()
             .AutoClear(false)
@@ -230,7 +230,6 @@ internal class NexusRunner
                     return false;
                 }
 
-                RunType runType = RunType.K8s;
 
                 // All runners
                 GlobalAppSettingsRunner globalAppSettingsRunner = new(_configurationService, runType, context);
@@ -304,7 +303,7 @@ internal class NexusRunner
         if (result)
         {
             AnsiConsole.MarkupLine("[green]Development Environment Setup Successfully[/]");
-            PrintState(_state);
+            PrintState(_state, runType);
             PrintVersion(_state);
             return true;
         }

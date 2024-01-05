@@ -136,9 +136,9 @@ public static class ConsoleUtilities
         return output;
     }
 
-    public static void PrintState(RunState state)
+    public static void PrintState(RunState state, RunType runType)
     {
-        Spectre.Console.Table table = new ();
+        Table table = new ();
         table.Border(TableBorder.Rounded);
         table.AddColumn(new TableColumn("[bold]Service[/]").LeftAligned());
         table.AddColumn(new TableColumn("[bold]Url[/]").LeftAligned());
@@ -148,13 +148,39 @@ public static class ConsoleUtilities
         {
             table.AddRow(serviceToken.Key, "[cyan]N/A[/]", $"[yellow]{serviceToken.Value}[/]");
         }
-        table.AddRow("Consul", "[cyan]http://localhost:8500[/]", $"[yellow]{state.GlobalToken}[/]");
-        table.AddRow("Frontend App", "[cyan]http://localhost:3000[/]", "[yellow]N/A[/]");
-        table.AddRow("Grafana", "[cyan]http://localhost:3900[/]", "[yellow]N/A[/]");
-        table.AddRow("Jaeger", "[cyan]http://localhost:16686[/]", "[yellow]N/A[/]");
-        table.AddRow("Prometheus", "[cyan]http://localhost:9090[/]", "[yellow]N/A[/]");
+
+        table.AddRow("Consul", $"[cyan]http://localhost:{GetServicePort("consul", runType)}[/]", $"[yellow]{state.GlobalToken}[/]");
+        table.AddRow("Frontend App", $"[cyan]http://localhost:{GetServicePort("fe", runType)}[/]", "[yellow]N/A[/]");
+        table.AddRow("Grafana", $"[cyan]http://localhost:{GetServicePort("grafana", runType)}[/]", "[yellow]N/A[/]");
+        table.AddRow("Jaeger", $"[cyan]http://localhost:{GetServicePort("jaeger",runType)}[/]", "[yellow]N/A[/]");
+        table.AddRow("Prometheus", $"[cyan]http://localhost:{GetServicePort("prometheus", runType)}[/]", "[yellow]N/A[/]");
         
         AnsiConsole.Write(table);
+    }
+
+    private static string GetServicePort(string service, RunType runType)
+    {
+        return runType switch
+        {
+            RunType.K8s => service switch
+            {
+                "consul" => "8500",
+                "fe" => "3000",
+                "grafana" => "3090",
+                "jaeger" => "16687",
+                "prometheus"=> "9091",
+                _ => "",
+            },
+            _ => service switch
+            {
+                "consul" => "8500",
+                "fe" => "3000",
+                "grafana" => "3900",
+                "jaeger" => "16686",
+                "prometheus"=> "9090",
+                _ => "",
+            },
+        };
     }
 
     public static void PrintVersion(RunState state)
